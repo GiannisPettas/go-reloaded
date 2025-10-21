@@ -48,6 +48,8 @@ Design a clear architecture that separates input reading, transformation logic, 
 
 Demonstrate understanding of stateful processing, modular code design, and testing for text manipulation.
 
+---
+
 ## 2. Rules and Examples
 
 | **Rule**                            | **Description**                                 | **Example**                             |
@@ -62,6 +64,7 @@ Demonstrate understanding of stateful processing, modular code design, and testi
 | Quotes `' '`                        | Moves quotation marks next to the correct words | `" ' awesome ' " → "'awesome'"`         |
 | `a → an`                            | Changes “a” to “an” before vowels or “h”        | `"a apple" → "an apple"`                |
 
+---
 
 ## 3. Architecture Comparison — Pipeline vs FSM
 | **Aspect**            | **Pipeline**                  | **Finite State Machine (FSM)**                |
@@ -71,10 +74,12 @@ Demonstrate understanding of stateful processing, modular code design, and testi
 | **Context awareness** | Limited                       | Full (can look back and react to context)     |
 | **Best for**          | Simple static transformations | Complex text processing and conditional logic |
 
+----
 
 Chosen Architecture: FSM  
 The FSM approach allows the program to handle contextual transformations such as backtracking across words or maintaining punctuation state between chunks. This design supports the “chunked” reading strategy while keeping memory usage minimal.
 
+---
 ### 4. FSM Logic Overview
 
 The FSM operates across the main stages of the program:
@@ -86,6 +91,8 @@ The FSM operates across the main stages of the program:
 3. Exporter → Writes processed text to the output file progressively.
 
 4. Controller → Orchestrates the workflow (Parser → FSM → Exporter).
+
+---
 
 **Main FSM States (conceptual):**
 
@@ -100,3 +107,12 @@ The FSM operates across the main stages of the program:
 * ERROR_STATE
 
 Each transition is triggered by detecting markers like (hex), (cap), punctuation symbols, or chunk boundaries.
+
+---
+
+## 5. Future Improvements
+
+* Add error logging and detailed reporting for invalid markers.
+* Implement parallel chunk processing for very large files.
+* Introduce custom configuration files for user-defined rules.
+* Expand test coverage with randomized and stress test files.
