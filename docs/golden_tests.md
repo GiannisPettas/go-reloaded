@@ -20,8 +20,8 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 ## T2 — Mixed Punctuation and Capitalization
 
 **Description:**  
-Tests the FSM’s ability to handle punctuation spacing and capitalization rules simultaneously.  
-Ensures that punctuation is attached correctly after transformations and that case changes don’t break sentence flow.
+Tests the FSM's ability to handle punctuation spacing and capitalization rules simultaneously.  
+Ensures that punctuation is attached correctly after transformations and that case changes don't break sentence flow.
 
 **Input:**  
 He said : ' this is incredible (cap, 2) ! ' can you believe it , though ?
@@ -45,7 +45,7 @@ Simply add 16, and check the total!
 ## T4 — Broken or Incomplete Command
 
 **Description:**  
-Validates the FSM’s ability to handle malformed or incomplete commands.  
+Validates the FSM's ability to handle malformed or incomplete commands.  
 If a command is missing its closing parenthesis or contains a punctuation error (like a period instead of a comma),  
 the FSM should **ignore the faulty marker** and continue processing normally without breaking the text structure.
 
@@ -252,3 +252,22 @@ word1 word2 word3 word4 word5 (up, 10) remaining text .
 
 **Expected Output:**  
 WORD1 WORD2 WORD3 WORD4 WORD5 remaining text.
+
+## T23 — Preserve Line Endings
+
+**Description:**  
+Tests that the system preserves original line endings and paragraph structure from input to output.
+
+**Input:**  
+First line with transformation (up).
+Second line here.
+
+Third line after blank line.
+Final line with number A (hex).
+
+**Expected Output:**  
+First line with TRANSFORMATION.
+Second line here.
+
+Third line after blank line.
+Final line with number 10.

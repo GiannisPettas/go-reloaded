@@ -7,7 +7,6 @@ import (
 	"go-reloaded/internal/parser"
 	"go-reloaded/internal/transformer"
 	"os"
-	"strings"
 )
 
 // ProcessFile orchestrates the complete workflow: Parser → Transformer → Exporter
@@ -119,11 +118,7 @@ func processChunkedFile(inputPath, outputPath string) error {
 	return nil
 }
 
-// tokensToText converts tokens back to text string
+// tokensToText converts tokens back to text string, preserving line breaks
 func tokensToText(tokens []transformer.Token) string {
-	var parts []string
-	for _, token := range tokens {
-		parts = append(parts, token.Value)
-	}
-	return strings.Join(parts, " ")
+	return transformer.TokensToString(tokens)
 }

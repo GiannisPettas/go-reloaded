@@ -1,0 +1,25 @@
+Welcome to the comprehensive test of go reloaded text processing system. This file contains various transformation commands that will test the chunked processing capabilities of our application.
+
+First, let 's test numeric conversions. The hexadecimal number 255 should become 255 in decimal. Similarly, the binary number 10 should convert to 10. We can also chain commands like this 21 which should first convert binary 1111 to decimal 15, then convert 15 to hexadecimal F.
+
+Now let' s test case transformations. This word should become lowercase. This WORD should become UPPERCASE. This Word should become Capitalized. We can also apply transformations to multiple words THESE THREE WORDS should all be uppercase. Similarly, these Two Words should be capitalized.
+
+Let 's test punctuation corrections. There should be no space before punctuation marks like this, this! this? this and this;. However, there should be spaces after punctuation marks. Like this, and this! Also this? And this Plus this;.
+
+Quote repositioning is another important feature. When we have quoted text, the comma should move inside like this. Similarly are you sure? should have the question mark inside the quotes.
+
+Article corrections are crucial for proper English. I need an apple should become an apple. I saw an car should become a car. It was an honor should become an honor. I met an European should become an European. The rule is based on vowel sounds, not just vowel letters.
+
+Let' s test some edge cases and combinations. The number 10 equals 10 in decimal. The binary 42 equals 42. Make this TEXT and then add punctuation, like this! We can have complex sentences with quotes, and they should be handled properly.
+
+Here 's a longer paragraph to test cross chunk processing. When text spans multiple chunks, the system must maintain context for commands that reference previous words. For example, if we have a word at the end of one chunk followed by a command at the beginning of the next chunk, it should still work correctly. The word transform should become lowercase even if it crosses chunk boundaries.
+
+More test cases Convert 26 to get 26. Convert 255 to get 255. Make These Words all capitalized properly. Fix the spacing around punctuation like this, and this! Also handle quotes with punctuation; correctly.
+
+Testing article corrections again I bought an umbrella and an house. This should become an umbrella and an house. The system should recognize vowel sounds an university (starts with 'yu' sound, so 'a' is correct) , an hour (silent 'h', so 'an' is correct) .
+
+Let' s add some complex chaining The value 32 (bin) should first convert hex 20 to decimal 32, then decimal 32 to binary 100000. Another example 255 should convert FF to 255, then make it uppercase (already uppercase, so stays 255) .
+
+Final section with mixed commands Process this data correctly. Handle quoted text with punctuation, properly! Convert 2748 to 2748. MAKE THESE FIVE WORDS all uppercase now. Fix articles I need an orange and an car for a trip to an university.
+
+This concludes our comprehensive test file. The system should handle all transformations correctly while maintaining memory efficiency through chunked processing. Each command should be applied according to the finite state machine rules, and the output should demonstrate proper handling of cross chunk contexts, UTF 8 safety, and error resilience for any invalid commands that might be present.

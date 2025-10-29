@@ -55,6 +55,27 @@ func TestTokenizeTextWithPunctuation(t *testing.T) {
 	}
 }
 
+func TestTokenizeTextWithLineBreaks(t *testing.T) {
+	text := "first line\nsecond line\n\nthird line"
+	tokens := TokenizeText(text)
+	
+	expected := []Token{
+		{Type: Word, Value: "first"},
+		{Type: Word, Value: "line"},
+		{Type: LineBreak, Value: "\n"},
+		{Type: Word, Value: "second"},
+		{Type: Word, Value: "line"},
+		{Type: LineBreak, Value: "\n"},
+		{Type: LineBreak, Value: "\n"},
+		{Type: Word, Value: "third"},
+		{Type: Word, Value: "line"},
+	}
+	
+	if !reflect.DeepEqual(tokens, expected) {
+		t.Errorf("Expected %+v, got %+v", expected, tokens)
+	}
+}
+
 func TestConvertHexBasic(t *testing.T) {
 	tokens := []Token{
 		{Type: Word, Value: "1E"},
@@ -187,7 +208,7 @@ func TestFixPunctuationSpacingAllTypes(t *testing.T) {
 	}
 	
 	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %+v, got %+v", expected, result)
+		t.Errorf("Expected %+v, got %+v", expected, tokens)
 	}
 }
 
@@ -388,5 +409,31 @@ func TestApplyAllTransformationsWithContext(t *testing.T) {
 	
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, got %+v", expected, result)
+	}
+}
+
+func TestPreserveLineEndingsBasic(t *testing.T) {
+	text := "First line with transformation (up).\nSecond line here."
+	tokens := TokenizeText(text)
+	result := ApplyAllTransformations(tokens)
+	output := TokensToString(result)
+	
+	expected := "First line with TRANSFORMATION.\nSecond line here."
+	
+	if output != expected {
+		t.Errorf("Expected %q, got %q", expected, output)
+	}
+}
+
+func TestPreserveLineEndingsMultiple(t *testing.T) {
+	text := "First line.\n\nThird line after blank.\nFinal line with A (hex)."
+	tokens := TokenizeText(text)
+	result := ApplyAllTransformations(tokens)
+	output := TokensToString(result)
+	
+	expected := "First line.\n\nThird line after blank.\nFinal line with 10."
+	
+	if output != expected {
+		t.Errorf("Expected %q, got %q", expected, output)
 	}
 }

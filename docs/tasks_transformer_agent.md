@@ -194,3 +194,21 @@ Tasks for the Transformer Agent focused on text transformations and FSM implemen
 4. **Validate**: With golden test T22
 
 **Dependencies**: All previous transformer tasks, Parser Agent Task 16
+
+---
+
+## Task 23: Transformer - Preserve Line Endings
+**Functionality**: Maintain original line breaks and paragraph structure  
+**TDD Steps**:
+1. **Red**: Write tests for line ending preservation
+   - Test single line breaks are preserved
+   - Test multiple consecutive line breaks (paragraphs)
+   - Test line breaks with transformations
+2. **Green**: Implement line break detection and preservation
+   - Modify tokenizer to recognize and preserve \n characters
+   - Ensure transformations don't remove line breaks
+   - Handle line breaks in token stream
+3. **Refactor**: Optimize line break handling
+4. **Validate**: With golden test T23
+
+**Dependencies**: Task 6 (Word Tokenization)

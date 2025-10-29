@@ -15,6 +15,7 @@ const (
 	Command
 	Punctuation
 	Quote
+	LineBreak
 )
 
 // Token represents a parsed element from text
@@ -23,17 +24,17 @@ type Token struct {
 	Value string
 }
 
-// TokenizeText splits text into tokens (words, commands, punctuation, quotes)
+// TokenizeText splits text into tokens (words, commands, punctuation, quotes, line breaks)
 func TokenizeText(text string) []Token {
-	if strings.TrimSpace(text) == "" {
+	if text == "" {
 		return []Token{}
 	}
 	
 	var tokens []Token
 	
-	// Regular expression to match tokens
-	// Matches: commands like (up), (hex), (up, 2), words, punctuation, quotes
-	re := regexp.MustCompile(`\([^)]+\)|[a-zA-Z0-9]+|[,.!?;]|'`)
+	// Regular expression to match tokens including line breaks
+	// Matches: commands like (up), (hex), (up, 2), words, punctuation, quotes, newlines
+	re := regexp.MustCompile(`\([^)]+\)|[a-zA-Z0-9]+|[,.!?;]|'|\n`)
 	
 	matches := re.FindAllString(text, -1)
 	
@@ -41,7 +42,9 @@ func TokenizeText(text string) []Token {
 		token := Token{Value: match}
 		
 		// Determine token type
-		if strings.HasPrefix(match, "(") && strings.HasSuffix(match, ")") {
+		if match == "\n" {
+			token.Type = LineBreak
+		} else if strings.HasPrefix(match, "(") && strings.HasSuffix(match, ")") {
 			token.Type = Command
 		} else if match == "'" {
 			token.Type = Quote
@@ -403,4 +406,22 @@ func ApplyAllTransformationsWithContext(currentChunk, overlapContext string) []T
 	// Return only the portion that corresponds to current chunk + context
 	// For cross-chunk commands, we need to return the transformed context too
 	return result
+}
+
+// TokensToString converts tokens back to string, preserving line breaks
+func TokensToString(tokens []Token) string {
+	var result strings.Builder
+	
+	for i, token := range tokens {
+		if token.Type == LineBreak {
+			result.WriteString(token.Value)
+		} else {
+			if i > 0 && tokens[i-1].Type != LineBreak && token.Type != LineBreak {
+				result.WriteString(" ")
+			}
+			result.WriteString(token.Value)
+		}
+	}
+	
+	return result.String()
 }
