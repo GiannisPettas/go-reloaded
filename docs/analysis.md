@@ -34,7 +34,21 @@ Each rule targets a specific kind of transformation:
 
 ### Efficiency and Design
 
-To make the process lightweight and memory-efficient, the program reads the input file in chunks rather than loading it entirely into memory. Each chunk is processed independently by the FSM, which maintains minimal state information — just enough to preserve context between words and sentences. This streaming approach not only saves memory but also makes the program faster, as it avoids unnecessary allocations and allows the exporter to write results progressively.
+To make the process lightweight and memory-efficient, the program reads the input file in overlapping chunks rather than loading it entirely into memory. Each chunk is **CHUNK_BYTES** in size, with **OVERLAP_WORDS** words preserved from the previous chunk to maintain context for transformations that reference preceding words.
+
+**Critical constraint**: each chunk boundary must align with complete UTF-8 runes to avoid corrupting multi-byte characters. The parser ensures chunks end at valid rune boundaries, never splitting Unicode characters.
+
+#### Chunk Processing Workflow
+
+1. **Parser** reads CHUNK_BYTES from input file, ensuring the chunk ends at a complete UTF-8 rune boundary
+2. **FSM Transformer** processes the chunk, applying all transformation rules
+3. **Word Separation**: The last OVERLAP_WORDS from the processed chunk are stored in memory
+4. **Exporter** writes the remaining words (excluding the stored overlap) to the output file
+5. **Next Iteration**: Parser reads the next CHUNK_BYTES starting from where the previous chunk ended
+6. **Context Merging**: The stored OVERLAP_WORDS are prepended to the new chunk before FSM processing
+7. Process repeats until end of file
+
+This overlapping design ensures commands like `(up, n)` can access words from previous chunks while maintaining minimal memory usage.
 
 ---
 
@@ -84,7 +98,7 @@ The FSM approach allows the program to handle contextual transformations such as
 
 The FSM operates across the main stages of the program:
 
- 1. Parser → Reads data from file in chunks of fixed size.
+ 1. Parser → Reads data from file in chunks of CHUNK_BYTES bytes, ensuring chunk boundaries align with complete UTF-8 runes.
 
 2. FSM Transformer → Applies transformation rules while maintaining context between chunks.
 
