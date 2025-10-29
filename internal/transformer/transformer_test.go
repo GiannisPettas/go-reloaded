@@ -76,6 +76,24 @@ func TestTokenizeTextWithLineBreaks(t *testing.T) {
 	}
 }
 
+func TestTokenizeTextWithContractions(t *testing.T) {
+	text := "Let's test don't and won't contractions"
+	tokens := TokenizeText(text)
+	
+	expected := []Token{
+		{Type: Word, Value: "Let's"},
+		{Type: Word, Value: "test"},
+		{Type: Word, Value: "don't"},
+		{Type: Word, Value: "and"},
+		{Type: Word, Value: "won't"},
+		{Type: Word, Value: "contractions"},
+	}
+	
+	if !reflect.DeepEqual(tokens, expected) {
+		t.Errorf("Expected %+v, got %+v", expected, tokens)
+	}
+}
+
 func TestConvertHexBasic(t *testing.T) {
 	tokens := []Token{
 		{Type: Word, Value: "1E"},
@@ -432,6 +450,19 @@ func TestPreserveLineEndingsMultiple(t *testing.T) {
 	output := TokensToString(result)
 	
 	expected := "First line.\n\nThird line after blank.\nFinal line with 10."
+	
+	if output != expected {
+		t.Errorf("Expected %q, got %q", expected, output)
+	}
+}
+
+func TestContractionsPreserved(t *testing.T) {
+	text := "Let's test don't and won't contractions"
+	tokens := TokenizeText(text)
+	result := ApplyAllTransformations(tokens)
+	output := TokensToString(result)
+	
+	expected := "Let's test don't and won't contractions"
 	
 	if output != expected {
 		t.Errorf("Expected %q, got %q", expected, output)

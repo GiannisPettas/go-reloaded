@@ -271,3 +271,14 @@ Second line here.
 
 Third line after blank line.
 Final line with number 10.
+
+## T24 — Contractions and Apostrophes
+
+**Description:**  
+Tests that contractions with apostrophes are handled correctly without adding extra spaces.
+
+**Input:**  
+Let's test contractions like don't, won't, and can't properly.
+
+**Expected Output:**  
+Let's test contractions like don't, won't, and can't properly.

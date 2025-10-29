@@ -32,9 +32,9 @@ func TokenizeText(text string) []Token {
 	
 	var tokens []Token
 	
-	// Regular expression to match tokens including line breaks
-	// Matches: commands like (up), (hex), (up, 2), words, punctuation, quotes, newlines
-	re := regexp.MustCompile(`\([^)]+\)|[a-zA-Z0-9]+|[,.!?;]|'|\n`)
+	// Regular expression to match tokens including line breaks and contractions
+	// Matches: commands like (up), (hex), (up, 2), words with apostrophes, punctuation, quotes, newlines
+	re := regexp.MustCompile(`\([^)]+\)|[a-zA-Z0-9]+(?:'[a-zA-Z]+)?|[,.!?;]|'|\n`)
 	
 	matches := re.FindAllString(text, -1)
 	
