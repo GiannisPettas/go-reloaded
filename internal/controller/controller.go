@@ -60,6 +60,12 @@ func processSingleChunk(inputPath, outputPath string) error {
 
 // processChunkedFile handles large files with overlap processing
 func processChunkedFile(inputPath, outputPath string) error {
+	// Get file info for safety checks
+	fileInfo, err := os.Stat(inputPath)
+	if err != nil {
+		return fmt.Errorf("failed to get file info: %w", err)
+	}
+	
 	var offset int64 = 0
 	var overlapContext string
 	isFirstChunk := true
@@ -108,6 +114,11 @@ func processChunkedFile(inputPath, outputPath string) error {
 		// Update context and offset
 		overlapContext = newOverlap
 		offset += int64(len(data))
+		
+		// Safety check to prevent infinite loops
+		if offset > fileInfo.Size() {
+			break
+		}
 		
 		// If chunk was smaller than expected, we're at end of file
 		if len(data) < config.CHUNK_BYTES {

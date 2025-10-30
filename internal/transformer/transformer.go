@@ -2,7 +2,6 @@ package transformer
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -31,33 +30,57 @@ func TokenizeText(text string) []Token {
 	}
 	
 	var tokens []Token
+	i := 0
 	
-	// Regular expression to match tokens including line breaks and contractions
-	// Matches: commands like (up), (hex), (up, 2), words with apostrophes, punctuation, quotes, newlines
-	re := regexp.MustCompile(`\([^)]+\)|[a-zA-Z0-9]+(?:'[a-zA-Z]+)?|[,.!?;]|'|\n`)
-	
-	matches := re.FindAllString(text, -1)
-	
-	for _, match := range matches {
-		token := Token{Value: match}
-		
-		// Determine token type
-		if match == "\n" {
-			token.Type = LineBreak
-		} else if strings.HasPrefix(match, "(") && strings.HasSuffix(match, ")") {
-			token.Type = Command
-		} else if match == "'" {
-			token.Type = Quote
-		} else if strings.ContainsAny(match, ",.!?;") {
-			token.Type = Punctuation
-		} else {
-			token.Type = Word
+	for i < len(text) {
+		if i >= len(text) {
+			break
 		}
 		
-		tokens = append(tokens, token)
+		char := text[i]
+		
+		if char == '\n' {
+			tokens = append(tokens, Token{Type: LineBreak, Value: "\n"})
+			i++
+		} else if char == '(' {
+			// Parse command
+			end := i + 1
+			for end < len(text) && text[end] != ')' {
+				end++
+			}
+			if end < len(text) {
+				tokens = append(tokens, Token{Type: Command, Value: text[i:end+1]})
+				i = end + 1
+			} else {
+				i++
+			}
+		} else if char == ',' || char == '.' || char == '!' || char == '?' || char == ';' || char == ':' {
+			tokens = append(tokens, Token{Type: Punctuation, Value: string(char)})
+			i++
+		} else if char == '\'' {
+			tokens = append(tokens, Token{Type: Quote, Value: "'"})
+			i++
+		} else if char == ' ' || char == '\t' {
+			// Skip whitespace
+			i++
+		} else if isAlphaNum(char) {
+			// Parse word (including contractions)
+			start := i
+			for i < len(text) && (isAlphaNum(text[i]) || (text[i] == '\'' && i+1 < len(text) && isAlphaNum(text[i+1]))) {
+				i++
+			}
+			tokens = append(tokens, Token{Type: Word, Value: text[start:i]})
+		} else {
+			i++
+		}
 	}
 	
 	return tokens
+}
+
+// isAlphaNum checks if a character is alphanumeric
+func isAlphaNum(char byte) bool {
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9')
 }
 
 // ConvertHex converts hexadecimal numbers to decimal
@@ -227,12 +250,17 @@ func parseCaseCommand(cmd string) (string, int) {
 	}
 	
 	// Check for numbered commands like (up, 2)
-	re := regexp.MustCompile(`\((up|low|cap),\s*(\d+)\)`)
-	matches := re.FindStringSubmatch(cmd)
-	if len(matches) == 3 {
-		command := matches[1]
-		if count, err := strconv.Atoi(matches[2]); err == nil {
-			return command, count
+	if len(cmd) > 4 && cmd[0] == '(' && cmd[len(cmd)-1] == ')' {
+		inner := cmd[1 : len(cmd)-1]
+		parts := strings.Split(inner, ",")
+		if len(parts) == 2 {
+			command := strings.TrimSpace(parts[0])
+			countStr := strings.TrimSpace(parts[1])
+			if (command == "up" || command == "low" || command == "cap") {
+				if count, err := strconv.Atoi(countStr); err == nil && count > 0 && count <= 1000 {
+					return command, count
+				}
+			}
 		}
 	}
 	
