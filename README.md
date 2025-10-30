@@ -67,7 +67,6 @@ Output: "make this word"
 Input:  "make this word (cap)"
 Output: "make this Word"
 ```
-
 #### Multiple Words
 ```
 Input:  "These three words (up, 3) should be uppercase"
