@@ -62,10 +62,10 @@ This document provides specific instructions for each AI agent role in the Go Re
 **Role**: Text transformation and FSM implementation
 **Working Directory**: `internal/transformer/`
 **Key Responsibilities**:
-- Implement all transformation rules (hex, bin, case, punctuation, quotes, articles)
-- Create FSM for stateful processing
-- Handle command parsing and execution
-- Manage context across chunks
+- Implement dual FSM architecture (character parser + token processor)
+- Create all transformation rules (hex, bin, case, punctuation, articles)
+- Handle single-pass processing with fixed-size buffers
+- Manage context across chunks with pending command state
 
 **Instructions**:
 - Implement one transformation rule at a time
@@ -106,7 +106,7 @@ This document provides specific instructions for each AI agent role in the Go Re
 **Role**: End-to-end testing and validation
 **Working Directory**: Root level and test directories
 **Key Responsibilities**:
-- Execute all golden tests (T1-T22)
+- Execute all golden tests (T1-T27)
 - Performance and memory validation
 - System integration testing
 - Final quality assurance

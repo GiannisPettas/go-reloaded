@@ -1,484 +1,381 @@
 package transformer
 
 import (
-	"fmt"
+	"go-reloaded/internal/config"
 	"strconv"
 	"strings"
 )
 
-// TokenType represents the type of a token
-type TokenType int
-
+// Token types
 const (
-	Word TokenType = iota
-	Command
-	Punctuation
-	Quote
-	LineBreak
+	WORD = iota
+	COMMAND
+	PUNCTUATION
+	SPACE
+	NEWLINE
 )
 
-// Token represents a parsed element from text
 type Token struct {
-	Type  TokenType
+	Type  int
 	Value string
 }
 
-// TokenizeText splits text into tokens (words, commands, punctuation, quotes, line breaks)
-func TokenizeText(text string) []Token {
-	if text == "" {
-		return []Token{}
+// Low-level FSM states
+const (
+	STATE_TEXT = iota
+	STATE_COMMAND
+)
+
+// High-level FSM for token processing
+type TokenProcessor struct {
+	tokens    [50]Token
+	tokenIdx  int
+	output    strings.Builder
+}
+
+func (tp *TokenProcessor) addToken(token Token) {
+	if tp.tokenIdx < len(tp.tokens) {
+		tp.tokens[tp.tokenIdx] = token
+		tp.tokenIdx++
+	} else {
+		// Buffer is full, flush first half to output
+		halfSize := len(tp.tokens) / 2
+		for i := 0; i < halfSize; i++ {
+			token := tp.tokens[i]
+			switch token.Type {
+			case WORD:
+				if tp.output.Len() > 0 && !strings.HasSuffix(tp.output.String(), " ") && !strings.HasSuffix(tp.output.String(), "\n") {
+					tp.output.WriteByte(' ')
+				}
+				tp.output.WriteString(token.Value)
+			case PUNCTUATION:
+				// Remove trailing space before punctuation
+				result := tp.output.String()
+				if strings.HasSuffix(result, " ") {
+					tp.output.Reset()
+					tp.output.WriteString(result[:len(result)-1])
+				}
+				tp.output.WriteString(token.Value)
+			case SPACE:
+				if tp.output.Len() > 0 && !strings.HasSuffix(tp.output.String(), " ") && !strings.HasSuffix(tp.output.String(), "\n") {
+					tp.output.WriteByte(' ')
+				}
+			case NEWLINE:
+				tp.output.WriteByte('\n')
+			}
+		}
+		
+		// Shift remaining tokens to beginning
+		for i := 0; i < halfSize; i++ {
+			tp.tokens[i] = tp.tokens[halfSize+i]
+		}
+		tp.tokenIdx = halfSize
+		
+		// Add new token
+		tp.tokens[tp.tokenIdx] = token
+		tp.tokenIdx++
+	}
+}
+
+func (tp *TokenProcessor) processCommand(cmdValue string) {
+	if tp.tokenIdx == 0 {
+		return // No words to transform
 	}
 	
-	var tokens []Token
-	i := 0
-	
-	for i < len(text) {
-		if i >= len(text) {
+	// Find last word token
+	lastWordIdx := -1
+	for i := tp.tokenIdx - 1; i >= 0; i-- {
+		if tp.tokens[i].Type == WORD {
+			lastWordIdx = i
 			break
 		}
-		
-		char := text[i]
-		
-		if char == '\n' {
-			tokens = append(tokens, Token{Type: LineBreak, Value: "\n"})
-			i++
-		} else if char == '(' {
-			// Parse command
-			end := i + 1
-			for end < len(text) && text[end] != ')' {
-				end++
+	}
+	
+	if lastWordIdx == -1 {
+		return
+	}
+	
+	// Parse command
+	if strings.Contains(cmdValue, ",") {
+		parts := strings.Split(cmdValue, ",")
+		if len(parts) == 2 {
+			cmd := strings.TrimSpace(parts[0])
+			countStr := strings.TrimSpace(parts[1])
+			if count, err := strconv.Atoi(countStr); err == nil && count > 0 {
+				// Transform multiple words
+				wordsTransformed := 0
+				for i := tp.tokenIdx - 1; i >= 0 && wordsTransformed < count; i-- {
+					if tp.tokens[i].Type == WORD {
+						tp.tokens[i].Value = tp.transformWord(tp.tokens[i].Value, cmd)
+						wordsTransformed++
+					}
+				}
 			}
-			if end < len(text) {
-				tokens = append(tokens, Token{Type: Command, Value: text[i:end+1]})
-				i = end + 1
+		}
+	} else {
+		// Single word command
+		switch cmdValue {
+		case "hex":
+			if val, err := strconv.ParseInt(tp.tokens[lastWordIdx].Value, 16, 64); err == nil {
+				tp.tokens[lastWordIdx].Value = strconv.FormatInt(val, 10)
+			}
+		case "bin":
+			if val, err := strconv.ParseInt(tp.tokens[lastWordIdx].Value, 2, 64); err == nil {
+				tp.tokens[lastWordIdx].Value = strconv.FormatInt(val, 10)
+			}
+		default:
+			tp.tokens[lastWordIdx].Value = tp.transformWord(tp.tokens[lastWordIdx].Value, cmdValue)
+		}
+	}
+}
+
+func (tp *TokenProcessor) transformWord(word, cmd string) string {
+	switch cmd {
+	case "up":
+		return strings.ToUpper(word)
+	case "low":
+		return strings.ToLower(word)
+	case "cap":
+		return strings.Title(strings.ToLower(word))
+	}
+	return word
+}
+
+func (tp *TokenProcessor) flushTokens() {
+	for i := 0; i < tp.tokenIdx; i++ {
+		token := tp.tokens[i]
+		switch token.Type {
+		case WORD:
+			if tp.output.Len() > 0 && !strings.HasSuffix(tp.output.String(), " ") && !strings.HasSuffix(tp.output.String(), "\n") {
+				tp.output.WriteByte(' ')
+			}
+			tp.output.WriteString(token.Value)
+		case PUNCTUATION:
+			// Remove trailing space before punctuation
+			result := tp.output.String()
+			if strings.HasSuffix(result, " ") {
+				tp.output.Reset()
+				tp.output.WriteString(result[:len(result)-1])
+			}
+			tp.output.WriteString(token.Value)
+		case SPACE:
+			if tp.output.Len() > 0 && !strings.HasSuffix(tp.output.String(), " ") && !strings.HasSuffix(tp.output.String(), "\n") {
+				tp.output.WriteByte(' ')
+			}
+		case NEWLINE:
+			tp.output.WriteByte('\n')
+		}
+	}
+	tp.tokenIdx = 0
+}
+
+// ProcessText - Single pass dual FSM implementation
+func ProcessText(text string) string {
+	if text == "" {
+		return ""
+	}
+	
+	runes := []rune(text)
+	processor := &TokenProcessor{}
+	
+	state := STATE_TEXT
+	var wordBuilder strings.Builder
+	var cmdBuilder strings.Builder
+	
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		
+		switch state {
+		case STATE_TEXT:
+			if r == '(' {
+				// Flush current word
+				if wordBuilder.Len() > 0 {
+					processor.addToken(Token{WORD, wordBuilder.String()})
+					wordBuilder.Reset()
+				}
+				state = STATE_COMMAND
+			} else if r == ' ' || r == '\t' {
+				// Flush word and add space
+				if wordBuilder.Len() > 0 {
+					processor.addToken(Token{WORD, wordBuilder.String()})
+					wordBuilder.Reset()
+				}
+				processor.addToken(Token{SPACE, " "})
+			} else if r == '\n' {
+				// Flush word and add newline
+				if wordBuilder.Len() > 0 {
+					processor.addToken(Token{WORD, wordBuilder.String()})
+					wordBuilder.Reset()
+				}
+				processor.addToken(Token{NEWLINE, "\n"})
+			} else if r == ',' || r == '.' || r == '!' || r == '?' || r == ';' || r == ':' {
+				// Flush word and add punctuation
+				if wordBuilder.Len() > 0 {
+					processor.addToken(Token{WORD, wordBuilder.String()})
+					wordBuilder.Reset()
+				}
+				processor.addToken(Token{PUNCTUATION, string(r)})
 			} else {
-				i++
+				wordBuilder.WriteRune(r)
 			}
-		} else if char == ',' || char == '.' || char == '!' || char == '?' || char == ';' || char == ':' {
-			tokens = append(tokens, Token{Type: Punctuation, Value: string(char)})
-			i++
-		} else if char == '\'' {
-			tokens = append(tokens, Token{Type: Quote, Value: "'"})
-			i++
-		} else if char == ' ' || char == '\t' {
-			// Skip whitespace
-			i++
-		} else if isAlphaNum(char) {
-			// Parse word (including contractions)
-			start := i
-			for i < len(text) && (isAlphaNum(text[i]) || (text[i] == '\'' && i+1 < len(text) && isAlphaNum(text[i+1]))) {
-				i++
+			
+		case STATE_COMMAND:
+			if r == ')' {
+				// Process command
+				processor.processCommand(cmdBuilder.String())
+				cmdBuilder.Reset()
+				state = STATE_TEXT
+			} else {
+				cmdBuilder.WriteRune(r)
 			}
-			tokens = append(tokens, Token{Type: Word, Value: text[start:i]})
-		} else {
-			i++
 		}
 	}
 	
-	return tokens
-}
-
-// isAlphaNum checks if a character is alphanumeric
-func isAlphaNum(char byte) bool {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9')
-}
-
-// removeInvalidNumericCommands removes hex/bin commands that couldn't convert
-func removeInvalidNumericCommands(tokens []Token) []Token {
-	var result []Token
+	// Flush remaining word
+	if wordBuilder.Len() > 0 {
+		processor.addToken(Token{WORD, wordBuilder.String()})
+	}
 	
-	for _, token := range tokens {
-		if token.Type == Command && (token.Value == "(hex)" || token.Value == "(bin)") {
-			// Skip invalid numeric commands
+	// Flush all tokens to output
+	processor.flushTokens()
+	
+	// Post-process articles
+	result := processor.output.String()
+	return fixArticles(result)
+}
+
+func fixArticles(text string) string {
+	// Process line by line to preserve line breaks
+	lines := strings.Split(text, "\n")
+	for lineIdx, line := range lines {
+		if line == "" {
 			continue
 		}
-		result = append(result, token)
-	}
-	
-	return result
-}
-
-// ConvertHex converts hexadecimal numbers to decimal
-func ConvertHex(tokens []Token) []Token {
-	var result []Token
-	
-	for i := 0; i < len(tokens); i++ {
-		if i > 0 && tokens[i].Type == Command && tokens[i].Value == "(hex)" {
-			// Convert previous token if it's a valid hex number
-			prevToken := tokens[i-1]
-			if prevToken.Type == Word {
-				if converted := convertHexToDecimal(prevToken.Value); converted != "" {
-					// Replace previous token with converted value
-					result[len(result)-1] = Token{Type: Word, Value: converted}
-					// Skip the (hex) command
-					continue
-				}
-			}
-		}
-		result = append(result, tokens[i])
-	}
-	
-	return result
-}
-
-// convertHexToDecimal converts a hex string to decimal, returns empty string if invalid
-func convertHexToDecimal(hex string) string {
-	isNegative := false
-	if strings.HasPrefix(hex, "-") {
-		isNegative = true
-		hex = hex[1:]
-	}
-	
-	// Validate hex characters
-	for _, char := range hex {
-		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
-			return "" // Invalid hex
-		}
-	}
-	
-	if hex == "" {
-		return "" // Empty after removing negative sign
-	}
-	
-	// Convert hex to decimal
-	var decimal int64 = 0
-	for _, char := range hex {
-		decimal *= 16
-		if char >= '0' && char <= '9' {
-			decimal += int64(char - '0')
-		} else if char >= 'a' && char <= 'f' {
-			decimal += int64(char - 'a' + 10)
-		} else if char >= 'A' && char <= 'F' {
-			decimal += int64(char - 'A' + 10)
-		}
-	}
-	
-	if isNegative {
-		return "-" + strings.Trim(strings.Replace(fmt.Sprintf("%d", decimal), "-", "", 1), " ")
-	}
-	return fmt.Sprintf("%d", decimal)
-}
-
-// ConvertBinary converts binary numbers to decimal
-func ConvertBinary(tokens []Token) []Token {
-	var result []Token
-	
-	for i := 0; i < len(tokens); i++ {
-		if i > 0 && tokens[i].Type == Command && tokens[i].Value == "(bin)" {
-			// Convert previous token if it's a valid binary number
-			prevToken := tokens[i-1]
-			if prevToken.Type == Word {
-				if converted := convertBinaryToDecimal(prevToken.Value); converted != "" {
-					// Replace previous token with converted value
-					result[len(result)-1] = Token{Type: Word, Value: converted}
-					// Skip the (bin) command
-					continue
-				}
-			}
-		}
-		result = append(result, tokens[i])
-	}
-	
-	return result
-}
-
-// convertBinaryToDecimal converts a binary string to decimal, returns empty string if invalid
-func convertBinaryToDecimal(binary string) string {
-	isNegative := false
-	if strings.HasPrefix(binary, "-") {
-		isNegative = true
-		binary = binary[1:]
-	}
-	
-	// Validate binary characters (only 0 and 1)
-	for _, char := range binary {
-		if char != '0' && char != '1' {
-			return "" // Invalid binary
-		}
-	}
-	
-	if binary == "" {
-		return "" // Empty after removing negative sign
-	}
-	
-	// Convert binary to decimal
-	var decimal int64 = 0
-	for _, char := range binary {
-		decimal *= 2
-		if char == '1' {
-			decimal += 1
-		}
-	}
-	
-	if isNegative {
-		return "-" + fmt.Sprintf("%d", decimal)
-	}
-	return fmt.Sprintf("%d", decimal)
-}
-
-// ApplyCaseTransform applies case transformations (up), (low), (cap)
-func ApplyCaseTransform(tokens []Token) []Token {
-	var result []Token
-	
-	for i := 0; i < len(tokens); i++ {
-		if tokens[i].Type == Command {
-			// Check for case transformation commands
-			if cmd, count := parseCaseCommand(tokens[i].Value); cmd != "" {
-				// Count available words before this command
-				availableWords := 0
-				for j := len(result) - 1; j >= 0; j-- {
-					if result[j].Type == Word {
-						availableWords++
-					}
-				}
-				
-				// Only apply if there are words to transform
-				if availableWords > 0 {
-					// Apply transformation to previous 'count' words
-					wordCount := 0
-					for j := len(result) - 1; j >= 0 && wordCount < count; j-- {
-						if result[j].Type == Word {
-							var transformed string
-							switch cmd {
-							case "up":
-								transformed = strings.ToUpper(result[j].Value)
-							case "low":
-								transformed = strings.ToLower(result[j].Value)
-							case "cap":
-								transformed = strings.Title(strings.ToLower(result[j].Value))
-							}
-							result[j] = Token{Type: Word, Value: transformed}
-							wordCount++
-						}
-					}
-				}
-				// Skip the command (valid or invalid)
-				continue
-			}
-		}
-		result = append(result, tokens[i])
-	}
-	
-	return result
-}
-
-// parseCaseCommand parses case commands like (up), (low, 2), (cap, 3)
-// Returns command type and word count (1 if not specified)
-func parseCaseCommand(cmd string) (string, int) {
-	if cmd == "(up)" {
-		return "up", 1
-	}
-	if cmd == "(low)" {
-		return "low", 1
-	}
-	if cmd == "(cap)" {
-		return "cap", 1
-	}
-	
-	// Check for numbered commands like (up, 2)
-	if len(cmd) > 4 && cmd[0] == '(' && cmd[len(cmd)-1] == ')' {
-		inner := cmd[1 : len(cmd)-1]
-		parts := strings.Split(inner, ",")
-		if len(parts) == 2 {
-			command := strings.TrimSpace(parts[0])
-			countStr := strings.TrimSpace(parts[1])
-			if (command == "up" || command == "low" || command == "cap") {
-				if count, err := strconv.Atoi(countStr); err == nil && count > 0 && count <= 1000 {
-					return command, count
-				}
-			}
-		}
-	}
-	
-	return "", 0
-}
-
-// FixPunctuationSpacing fixes spacing around punctuation marks
-func FixPunctuationSpacing(tokens []Token) []Token {
-	var result []Token
-	
-	for i := 0; i < len(tokens); i++ {
-		if tokens[i].Type == Punctuation {
-			// Attach punctuation to previous word if exists
-			if len(result) > 0 && result[len(result)-1].Type == Word {
-				// Collect consecutive punctuation marks
-				punctuation := tokens[i].Value
-				j := i + 1
-				for j < len(tokens) && tokens[j].Type == Punctuation {
-					punctuation += tokens[j].Value
-					j++
-				}
-				
-				// Attach to previous word
-				result[len(result)-1].Value += punctuation
-				
-				// Skip processed punctuation tokens
-				i = j - 1
-			} else {
-				// No previous word, keep punctuation as is
-				result = append(result, tokens[i])
-			}
-		} else {
-			result = append(result, tokens[i])
-		}
-	}
-	
-	return result
-}
-
-// RepositionQuotes moves single quotes to correct positions around words
-func RepositionQuotes(tokens []Token) []Token {
-	var result []Token
-	
-	for i := 0; i < len(tokens); i++ {
-		if tokens[i].Type == Quote && tokens[i].Value == "'" {
-			// Look for matching closing quote
-			quoteStart := i
-			quoteEnd := -1
-			
-			// Find the next quote
-			for j := i + 1; j < len(tokens); j++ {
-				if tokens[j].Type == Quote && tokens[j].Value == "'" {
-					quoteEnd = j
-					break
-				}
-			}
-			
-			if quoteEnd != -1 {
-				// Found matching pair, reposition quotes
-				var quotedContent []Token
-				for k := quoteStart + 1; k < quoteEnd; k++ {
-					quotedContent = append(quotedContent, tokens[k])
-				}
-				
-				if len(quotedContent) > 0 {
-					// Attach opening quote to first word
-					if quotedContent[0].Type == Word {
-						quotedContent[0].Value = "'" + quotedContent[0].Value
-					}
-					
-					// Attach closing quote to last word
-					if quotedContent[len(quotedContent)-1].Type == Word {
-						quotedContent[len(quotedContent)-1].Value += "'"
-					}
-					
-					// Add quoted content to result
-					result = append(result, quotedContent...)
-				}
-				
-				// Skip to after closing quote
-				i = quoteEnd
-			} else {
-				// No matching quote found, keep as is
-				result = append(result, tokens[i])
-			}
-		} else {
-			result = append(result, tokens[i])
-		}
-	}
-	
-	return result
-}
-
-// CorrectArticles changes "a" to "an" before vowels and "h"
-func CorrectArticles(tokens []Token) []Token {
-	var result []Token
-	
-	for i := 0; i < len(tokens); i++ {
-		if tokens[i].Type == Word && strings.ToLower(tokens[i].Value) == "a" {
-			// Check if next token is a word starting with vowel or 'h'
-			if i+1 < len(tokens) && tokens[i+1].Type == Word {
-				nextWord := strings.ToLower(tokens[i+1].Value)
+		
+		words := strings.Fields(line)
+		for i := 0; i < len(words)-1; i++ {
+			if strings.ToLower(words[i]) == "a" || strings.ToLower(words[i]) == "an" {
+				nextWord := words[i+1]
 				if len(nextWord) > 0 {
-					firstChar := nextWord[0]
-					if firstChar == 'a' || firstChar == 'e' || firstChar == 'i' || firstChar == 'o' || firstChar == 'u' || firstChar == 'h' {
-						// Change "a" to "an"
-						if tokens[i].Value == "a" {
-							tokens[i].Value = "an"
-						} else if tokens[i].Value == "A" {
-							tokens[i].Value = "An"
+					// Remove punctuation for vowel check
+					cleanWord := nextWord
+					for strings.HasSuffix(cleanWord, ".") || strings.HasSuffix(cleanWord, ",") || strings.HasSuffix(cleanWord, "!") || strings.HasSuffix(cleanWord, "?") || strings.HasSuffix(cleanWord, ";") || strings.HasSuffix(cleanWord, ":") {
+						cleanWord = cleanWord[:len(cleanWord)-1]
+					}
+					
+					if len(cleanWord) > 0 {
+						first := strings.ToLower(cleanWord)[0]
+						if first == 'a' || first == 'e' || first == 'i' || first == 'o' || first == 'u' || first == 'h' {
+							// Should be "an"
+							if words[i] == "a" {
+								words[i] = "an"
+							} else if words[i] == "A" {
+								words[i] = "An"
+							}
+						} else {
+							// Should be "a"
+							if words[i] == "an" {
+								words[i] = "a"
+							} else if words[i] == "An" {
+								words[i] = "A"
+							}
 						}
 					}
 				}
 			}
 		}
-		result = append(result, tokens[i])
+		lines[lineIdx] = strings.Join(words, " ")
 	}
-	
-	return result
+	return strings.Join(lines, "\n")
 }
 
-// ApplyAllTransformations applies all transformations in the correct order
-// This ensures proper command chaining and left-to-right execution
-func ApplyAllTransformations(tokens []Token) []Token {
-	// Apply transformations in order:
-	// 1. Numeric conversions (hex, bin) - these can chain
-	// 2. Case transformations
-	// 3. Article corrections
-	// 4. Quote repositioning
-	// 5. Punctuation spacing (last, as it modifies token structure)
-	
-	result := tokens
-	
-	// Apply numeric conversions multiple times to handle chaining
-	for i := 0; i < 3; i++ { // Max 3 iterations to handle reasonable chaining
-		prevLen := len(result)
-		result = ConvertHex(result)
-		result = ConvertBinary(result)
-		// If no changes in length, break early
-		if len(result) == prevLen {
-			break
-		}
-	}
-	
-	// Remove any remaining invalid numeric commands
-	result = removeInvalidNumericCommands(result)
-	
-	// Apply other transformations
-	result = ApplyCaseTransform(result)
-	result = CorrectArticles(result)
-	result = RepositionQuotes(result)
-	result = FixPunctuationSpacing(result)
-	
-	return result
+// Legacy compatibility functions
+func TokenizeText(text string) []string {
+	return strings.Fields(ProcessText(text))
 }
 
-// ApplyAllTransformationsWithContext applies transformations with overlap context
-// This handles cross-chunk word references for commands like (up, n)
-func ApplyAllTransformationsWithContext(currentChunk, overlapContext string) []Token {
-	// Merge overlap context with current chunk
+func ApplyAllTransformations(tokens []string) []string {
+	return strings.Fields(ProcessText(strings.Join(tokens, " ")))
+}
+
+func ApplyAllTransformationsWithContext(currentChunk, overlapContext string) []string {
 	mergedText := overlapContext
 	if overlapContext != "" && currentChunk != "" {
 		mergedText += " " + currentChunk
 	} else if currentChunk != "" {
 		mergedText = currentChunk
 	}
-	
-	// Tokenize merged text
-	tokens := TokenizeText(mergedText)
-	
-	// Apply all transformations
-	result := ApplyAllTransformations(tokens)
-	
-	// Return only the portion that corresponds to current chunk + context
-	// For cross-chunk commands, we need to return the transformed context too
-	return result
+	return strings.Fields(ProcessText(mergedText))
 }
 
-// TokensToString converts tokens back to string, preserving line breaks
-func TokensToString(tokens []Token) string {
-	var result strings.Builder
+func TokensToString(tokens []string) string {
+	return strings.Join(tokens, " ")
+}
+
+// StreamProcessor maintains FSM state across chunks
+type StreamProcessor struct {
+	buffer    strings.Builder
+	processor *TokenProcessor
+	output    strings.Builder
+}
+
+func NewStreamProcessor() *StreamProcessor {
+	return &StreamProcessor{
+		processor: &TokenProcessor{},
+	}
+}
+
+func (sp *StreamProcessor) ProcessChunk(data []byte) string {
+	// Add chunk to buffer
+	sp.buffer.Write(data)
+	bufferText := sp.buffer.String()
 	
-	for i, token := range tokens {
-		if token.Type == LineBreak {
-			result.WriteString(token.Value)
-		} else {
-			if i > 0 && tokens[i-1].Type != LineBreak && token.Type != LineBreak {
-				result.WriteString(" ")
-			}
-			result.WriteString(token.Value)
+	// If buffer is getting large, process it in segments
+	if sp.buffer.Len() > config.CHUNK_BYTES*2 {
+		// Find last complete sentence or word boundary
+		lastBoundary := strings.LastIndexAny(bufferText, ".!?")
+		if lastBoundary == -1 {
+			lastBoundary = strings.LastIndex(bufferText, " ")
+		}
+		
+		if lastBoundary > 0 {
+			completeText := bufferText[:lastBoundary+1]
+			remaining := bufferText[lastBoundary+1:]
+			
+			// Reset buffer with remaining text
+			sp.buffer.Reset()
+			sp.buffer.WriteString(remaining)
+			
+			// Process and accumulate output
+			processed := ProcessText(completeText)
+			sp.output.WriteString(processed)
+			
+			// Return accumulated output
+			result := sp.output.String()
+			sp.output.Reset()
+			return result
 		}
 	}
 	
-	return result.String()
+	return ""
+}
+
+func (sp *StreamProcessor) Flush() string {
+	// Process any remaining text in buffer
+	remaining := sp.buffer.String()
+	sp.buffer.Reset()
+	
+	// Add any accumulated output
+	accumulated := sp.output.String()
+	sp.output.Reset()
+	
+	if remaining != "" {
+		processed := ProcessText(remaining)
+		if accumulated != "" {
+			return accumulated + processed
+		}
+		return processed
+	}
+	
+	return accumulated
 }

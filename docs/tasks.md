@@ -54,13 +54,13 @@ Incremental TDD tasks for building the Go Reloaded text processing system.
 
 ## Phase 3: Transformation Engine
 
-### Task 6: Transformer - Word Tokenization
+### Task 6: Transformer - Dual FSM Implementation
 **Agent**: Transformer Agent  
-**Functionality**: Split text into words and identify transformation markers  
+**Functionality**: Implement dual finite state machine for single-pass processing  
 **TDD Steps**:
-1. Write tests for word splitting and marker detection
-2. Implement tokenizer that identifies words and commands
-3. Validate correct parsing of text with various markers
+1. Write tests for character-level parsing and token generation
+2. Implement low-level FSM (character → tokens) and high-level FSM (token processing)
+3. Validate correct dual-FSM coordination with transformation markers
 
 ### Task 7: Transformer - Hexadecimal Conversion
 **Agent**: Transformer Agent  
@@ -172,11 +172,11 @@ Incremental TDD tasks for building the Go Reloaded text processing system.
 
 ### Task 19: Integration - Golden Test Suite
 **Agent**: Integration Agent  
-**Functionality**: Execute all golden tests (T1-T22)  
+**Functionality**: Execute all golden tests (T1-T27)  
 **TDD Steps**:
 1. Write integration test runner for all golden tests
 2. Implement test execution and result comparison
-3. Validate all 22 golden tests pass
+3. Validate all 27 golden tests pass
 
 ### Task 20: Integration - Performance Validation
 **Agent**: Integration Agent  
@@ -206,7 +206,7 @@ Incremental TDD tasks for building the Go Reloaded text processing system.
 
 ## Success Criteria
 
-- All 22 golden tests pass
+- All 27 golden tests pass
 - Memory usage remains constant regardless of file size
 - UTF-8 characters are handled correctly
 - All transformation rules work as specified

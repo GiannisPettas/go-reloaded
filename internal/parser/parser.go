@@ -68,7 +68,7 @@ func ExtractOverlapWords(text string) (overlap, remaining string) {
 	words := strings.Fields(text)
 	
 	if len(words) <= config.OVERLAP_WORDS {
-		// If we have fewer words than overlap size, all words become overlap
+		// If we have fewer words than overlap size, return all as overlap
 		return text, ""
 	}
 	

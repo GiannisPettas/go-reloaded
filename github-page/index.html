@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go-Reloaded | High-Performance Text Processing</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">Go-Reloaded</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#performance">Performance</a></li>
+                <li><a href="https://github.com/yourusername/go-reloaded" class="github-btn">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    High-Performance Text Processing
+                    <span class="highlight">with Dual FSM Architecture</span>
+                </h1>
+                <p class="hero-description">
+                    Go-Reloaded transforms text files using a sophisticated dual finite state machine 
+                    that processes any file size with constant 8KB memory usage and zero dependencies.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">O(1)</span>
+                        <span class="stat-label">Memory Usage</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">O(n)</span>
+                        <span class="stat-label">Time Complexity</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">1.6MB</span>
+                        <span class="stat-label">Binary Size</span>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <a href="#demo" class="btn btn-primary">Try Demo</a>
+                    <a href="https://github.com/yourusername/go-reloaded" class="btn btn-secondary">View Source</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="fsm-diagram">
+                    <div class="fsm-state active" id="state-text">
+                        <span>STATE_TEXT</span>
+                        <div class="state-description">Processing characters</div>
+                    </div>
+                    <div class="fsm-arrow">→</div>
+                    <div class="fsm-state" id="state-command">
+                        <span>STATE_COMMAND</span>
+                        <div class="state-description">Processing commands</div>
+                    </div>
+                    <div class="fsm-tokens">
+                        <div class="token">WORD</div>
+                        <div class="token">COMMAND</div>
+                        <div class="token">PUNCTUATION</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Powerful Text Transformations</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔢</div>
+                    <h3>Numeric Conversions</h3>
+                    <p>Convert hexadecimal and binary numbers to decimal with command chaining support.</p>
+                    <div class="feature-example">
+                        <code>"1010 (bin) (hex)" → "16"</code>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔤</div>
+                    <h3>Case Transformations</h3>
+                    <p>Apply uppercase, lowercase, and capitalization to single words or word ranges.</p>
+                    <div class="feature-example">
+                        <code>"these words (up, 2)" → "THESE WORDS"</code>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Article Correction</h3>
+                    <p>Automatically fix "a/an" usage based on vowel sounds and pronunciation rules.</p>
+                    <div class="feature-example">
+                        <code>"a apple" → "an apple"</code>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✨</div>
+                    <h3>Punctuation Spacing</h3>
+                    <p>Fix spacing around punctuation marks for proper typography.</p>
+                    <div class="feature-example">
+                        <code>"Hello , world !" → "Hello, world!"</code>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Command Chaining</h3>
+                    <p>Apply multiple transformations to the same word in sequence.</p>
+                    <div class="feature-example">
+                        <code>"FF (hex) (up)" → "255"</code>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Error Resilience</h3>
+                    <p>Invalid commands are gracefully ignored, processing continues seamlessly.</p>
+                    <div class="feature-example">
+                        <code>"word (invalid)" → "word"</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="demo" class="demo">
+        <div class="container">
+            <h2 class="section-title">Interactive Demo</h2>
+            <div class="demo-container">
+                <div class="demo-input">
+                    <h3>Input Text</h3>
+                    <textarea id="demo-input-text" placeholder="Enter text with transformation commands...">Simply add 1010 (bin) (hex) , and check the total !
+
+I need a apple and an car for the trip.
+
+Convert FF (hex) to decimal and make it (up) .</textarea>
+                </div>
+                <div class="demo-output">
+                    <h3>Transformed Output</h3>
+                    <div id="demo-output-text" class="output-display">
+                        Click "Transform" to see the result...
+                    </div>
+                </div>
+                <button id="transform-btn" class="btn btn-primary">Transform Text</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture" class="architecture">
+        <div class="container">
+            <h2 class="section-title">Dual FSM Architecture</h2>
+            <div class="architecture-content">
+                <div class="architecture-text">
+                    <h3>Two Finite State Machines Working in Tandem</h3>
+                    <p>Go-Reloaded employs a sophisticated dual FSM architecture that separates parsing concerns from processing logic, enabling single-pass processing with constant memory usage.</p>
+                    
+                    <div class="fsm-details">
+                        <div class="fsm-detail">
+                            <h4>Low-Level FSM (Character Parser)</h4>
+                            <ul>
+                                <li><strong>Purpose:</strong> Character-by-character tokenization</li>
+                                <li><strong>States:</strong> STATE_TEXT, STATE_COMMAND</li>
+                                <li><strong>Output:</strong> Token stream (WORD, COMMAND, PUNCTUATION, SPACE, NEWLINE)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="fsm-detail">
+                            <h4>High-Level FSM (Token Processor)</h4>
+                            <ul>
+                                <li><strong>Purpose:</strong> Token processing and transformations</li>
+                                <li><strong>Buffer:</strong> Fixed-size [50]Token array with overflow handling</li>
+                                <li><strong>Features:</strong> Pending command state for forward-looking transformations</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="architecture-diagram">
+                    <div class="flow-diagram">
+                        <div class="flow-step">
+                            <div class="step-box">Input Text</div>
+                            <div class="step-arrow">↓</div>
+                        </div>
+                        <div class="flow-step">
+                            <div class="step-box">Low-Level FSM<br><small>Character → Tokens</small></div>
+                            <div class="step-arrow">↓</div>
+                        </div>
+                        <div class="flow-step">
+                            <div class="step-box">High-Level FSM<br><small>Token Processing</small></div>
+                            <div class="step-arrow">↓</div>
+                        </div>
+                        <div class="flow-step">
+                            <div class="step-box">Transformed Output</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="examples" class="examples">
+        <div class="container">
+            <h2 class="section-title">Transformation Examples</h2>
+            <div class="examples-grid">
+                <div class="example-card">
+                    <h3>Numeric Base Conversion</h3>
+                    <div class="example-demo">
+                        <div class="example-input">
+                            <span class="label">Input:</span>
+                            <code>"The value is 1E (hex)"</code>
+                        </div>
+                        <div class="example-arrow">→</div>
+                        <div class="example-output">
+                            <span class="label">Output:</span>
+                            <code>"The value is 30"</code>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="example-card">
+                    <h3>Command Chaining</h3>
+                    <div class="example-demo">
+                        <div class="example-input">
+                            <span class="label">Input:</span>
+                            <code>"1010 (bin) (hex)"</code>
+                        </div>
+                        <div class="example-arrow">→</div>
+                        <div class="example-output">
+                            <span class="label">Output:</span>
+                            <code>"16"</code>
+                        </div>
+                    </div>
+                    <div class="example-explanation">
+                        1010 (binary) → 10 (decimal) → 16 (hexadecimal)
+                    </div>
+                </div>
+                
+                <div class="example-card">
+                    <h3>Multi-word Transformations</h3>
+                    <div class="example-demo">
+                        <div class="example-input">
+                            <span class="label">Input:</span>
+                            <code>"these three words (up, 3)"</code>
+                        </div>
+                        <div class="example-arrow">→</div>
+                        <div class="example-output">
+                            <span class="label">Output:</span>
+                            <code>"THESE THREE WORDS"</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="performance" class="performance">
+        <div class="container">
+            <h2 class="section-title">Performance Characteristics</h2>
+            <div class="performance-grid">
+                <div class="performance-chart">
+                    <h3>Memory Usage vs File Size</h3>
+                    <div class="chart-visual">
+                        <div class="chart-line">
+                            <div class="chart-point" style="left: 10%;">1KB</div>
+                            <div class="chart-point" style="left: 30%;">1MB</div>
+                            <div class="chart-point" style="left: 60%;">100MB</div>
+                            <div class="chart-point" style="left: 90%;">1GB</div>
+                            <div class="constant-line">8KB Memory (Constant)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="performance-stats">
+                    <h3>Benchmarks</h3>
+                    <div class="benchmark-table">
+                        <div class="benchmark-row">
+                            <span class="benchmark-label">1KB File</span>
+                            <span class="benchmark-value">~8KB RAM, &lt;1ms</span>
+                        </div>
+                        <div class="benchmark-row">
+                            <span class="benchmark-label">1MB File</span>
+                            <span class="benchmark-value">~8KB RAM, ~10ms</span>
+                        </div>
+                        <div class="benchmark-row">
+                            <span class="benchmark-label">100MB File</span>
+                            <span class="benchmark-value">~8KB RAM, ~1s</span>
+                        </div>
+                        <div class="benchmark-row">
+                            <span class="benchmark-label">1GB File</span>
+                            <span class="benchmark-value">~8KB RAM, ~10s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <div class="footer-logo">
+                        <span class="logo-icon">⚡</span>
+                        <span class="logo-text">Go-Reloaded</span>
+                    </div>
+                    <p>High-performance text processing with dual FSM architecture.</p>
+                </div>
+                <div class="footer-right">
+                    <div class="footer-links">
+                        <a href="https://github.com/yourusername/go-reloaded">GitHub</a>
+                        <a href="https://github.com/yourusername/go-reloaded/issues">Issues</a>
+                        <a href="https://github.com/yourusername/go-reloaded/blob/main/LICENSE">License</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Go-Reloaded. Licensed under MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

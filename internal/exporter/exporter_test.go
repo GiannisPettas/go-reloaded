@@ -129,7 +129,8 @@ func TestWriteChunkUnicodeContent(t *testing.T) {
 }
 
 func TestWriteChunkInvalidPath(t *testing.T) {
-	err := WriteChunk("/invalid/path/that/does/not/exist/file.txt", "content")
+	// Use a path with invalid characters on Windows
+	err := WriteChunk("<>:\"|?*invalid.txt", "content")
 	if err == nil {
 		t.Errorf("WriteChunk should return error for invalid path")
 	}
