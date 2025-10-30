@@ -83,6 +83,21 @@ func isAlphaNum(char byte) bool {
 	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9')
 }
 
+// removeInvalidNumericCommands removes hex/bin commands that couldn't convert
+func removeInvalidNumericCommands(tokens []Token) []Token {
+	var result []Token
+	
+	for _, token := range tokens {
+		if token.Type == Command && (token.Value == "(hex)" || token.Value == "(bin)") {
+			// Skip invalid numeric commands
+			continue
+		}
+		result = append(result, token)
+	}
+	
+	return result
+}
+
 // ConvertHex converts hexadecimal numbers to decimal
 func ConvertHex(tokens []Token) []Token {
 	var result []Token
@@ -206,27 +221,38 @@ func ApplyCaseTransform(tokens []Token) []Token {
 	var result []Token
 	
 	for i := 0; i < len(tokens); i++ {
-		if i > 0 && tokens[i].Type == Command {
+		if tokens[i].Type == Command {
 			// Check for case transformation commands
 			if cmd, count := parseCaseCommand(tokens[i].Value); cmd != "" {
-				// Apply transformation to previous 'count' words
-				wordCount := 0
-				for j := len(result) - 1; j >= 0 && wordCount < count; j-- {
+				// Count available words before this command
+				availableWords := 0
+				for j := len(result) - 1; j >= 0; j-- {
 					if result[j].Type == Word {
-						var transformed string
-						switch cmd {
-						case "up":
-							transformed = strings.ToUpper(result[j].Value)
-						case "low":
-							transformed = strings.ToLower(result[j].Value)
-						case "cap":
-							transformed = strings.Title(strings.ToLower(result[j].Value))
-						}
-						result[j] = Token{Type: Word, Value: transformed}
-						wordCount++
+						availableWords++
 					}
 				}
-				// Skip the command
+				
+				// Only apply if there are words to transform
+				if availableWords > 0 {
+					// Apply transformation to previous 'count' words
+					wordCount := 0
+					for j := len(result) - 1; j >= 0 && wordCount < count; j-- {
+						if result[j].Type == Word {
+							var transformed string
+							switch cmd {
+							case "up":
+								transformed = strings.ToUpper(result[j].Value)
+							case "low":
+								transformed = strings.ToLower(result[j].Value)
+							case "cap":
+								transformed = strings.Title(strings.ToLower(result[j].Value))
+							}
+							result[j] = Token{Type: Word, Value: transformed}
+							wordCount++
+						}
+					}
+				}
+				// Skip the command (valid or invalid)
 				continue
 			}
 		}
@@ -404,6 +430,9 @@ func ApplyAllTransformations(tokens []Token) []Token {
 			break
 		}
 	}
+	
+	// Remove any remaining invalid numeric commands
+	result = removeInvalidNumericCommands(result)
 	
 	// Apply other transformations
 	result = ApplyCaseTransform(result)

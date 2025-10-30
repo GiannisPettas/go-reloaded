@@ -1,4 +1,4 @@
-Welcome to the comprehensive test of go-reloaded text processing system. This file contains various transformation commands that will test the chunked processing capabilities of our application.
+(low, 2) Welcome to the comprehensive test of go-reloaded text processing system. This file contains various transformation commands that will test the chunked processing capabilities of our application.
 
 First, let's test numeric conversions. The hexadecimal number FF (hex) should become 255 in decimal. Similarly, the binary number 1010 (bin) should convert to 10. We can also chain commands like this: 1111 (bin) (hex) which should first convert binary 1111 to decimal 15, then convert 15 to hexadecimal F.
 
@@ -14,11 +14,11 @@ Let's test some edge cases and combinations. The number A (hex) equals 10 in dec
 
 Here's a longer paragraph to test cross-chunk processing. When text spans multiple chunks, the system must maintain context for commands that reference previous words. For example, if we have a word at the end of one chunk followed by a command at the beginning of the next chunk, it should still work correctly. The word TRANSFORM (low) should become lowercase even if it crosses chunk boundaries.
 
-More test cases: Convert 1A (hex) to get 26. Convert 11111111 (bin) to get 255. Make these words (up, 21) all capitalized properly. Fix the spacing around punctuation : like this , and this ! Also handle "quotes with punctuation" ; correctly .
+More test cases: Convert 1A (hex) to get 26. Convert 11111111 (bin) to get 255. Make these words (up, 50) all capitalized properly. Fix the spacing around punctuation : like this , and this ! Also handle "quotes with punctuation" ; correctly .
 
 Testing article corrections again: I bought a umbrella and an house. This should become "an umbrella" and "a house". The system should recognize vowel sounds: a university (starts with 'yu' sound, so 'a' is correct), an hour (silent 'h', so 'an' is correct).
 
-Let's add some complex chaining: The value 20 (hex) (bin) should first convert hex 20 to decimal 32, then decimal 32 to binary 100000. Another example: FF (hex) (up) should convert FF to 255, then make it uppercase (already uppercase, so stays 255).
+Let's add some complex chaining: The value 20 (hex) (bin) (low, 2) should first convert hex 20 to decimal 32, then decimal 32 to binary 100000. Another example: FF (hex) (up) should convert FF to 255, then make it uppercase (already uppercase, so stays 255).
 
 Final section with mixed commands: Process this DATA (low) correctly . Handle "quoted text with punctuation" , properly ! Convert ABC (hex) to 2748 . Make these five words (up, 5) all uppercase now . Fix articles: I need a orange and an car for a trip to an university .
 

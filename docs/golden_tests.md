@@ -282,3 +282,25 @@ Let's test contractions like don't, won't, and can't properly.
 
 **Expected Output:**  
 Let's test contractions like don't, won't, and can't properly.
+
+## T25 — Invalid Commands at Start
+
+**Description:**  
+Tests that invalid commands at the beginning of text are ignored and removed since they have no preceding words to transform.
+
+**Input:**  
+(low, 2) Welcome to the comprehensive test of go-reloaded text processing system.
+
+**Expected Output:**  
+Welcome to the comprehensive test of go-reloaded text processing system.
+
+## T26 — Invalid Commands After Numeric Conversions
+
+**Description:**  
+Tests that case transformation commands are removed when they follow numeric conversions that consume all preceding words, leaving no words to transform.
+
+**Input:**  
+The value 20 (hex) (bin) (low, 2)
+
+**Expected Output:**  
+The value 32
