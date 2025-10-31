@@ -660,7 +660,7 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
     .hero-container {
         grid-template-columns: 1fr;
         text-align: center;
@@ -688,9 +688,9 @@ body {
         align-items: center;
         gap: 12px;
     }
-}
+} */
 
-@media (max-width: 480px) {
+@media (max-width: 800px) {
     .hero-container{
         display: flex;
         flex-wrap: wrap;
