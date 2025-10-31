@@ -93,7 +93,7 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-    display: grid;
+    display: flex;
     grid-template-columns: 1fr 1fr;
     gap: 60px;
     align-items: center;
@@ -694,6 +694,7 @@ body {
     .hero-container{
         display: flex;
         flex-wrap: wrap;
+        justify-content: center;
     }
     .hero-title {
         font-size: clamp(18px, 7vw, 28px);
