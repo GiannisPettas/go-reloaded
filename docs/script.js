@@ -85,6 +85,15 @@ function simulateTransformation(text) {
         return wordArray.join(' ');
     });
     
+    result = result.replace(/(\w+(?:\s+\w+)*)\s*\(low,\s*(\d+)\)/g, (match, words, count) => {
+        const wordArray = words.split(/\s+/);
+        const numWords = Math.min(parseInt(count), wordArray.length);
+        for (let i = wordArray.length - numWords; i < wordArray.length; i++) {
+            wordArray[i] = wordArray[i].toLowerCase();
+        }
+        return wordArray.join(' ');
+    });
+    
     // Article corrections
     result = result.replace(/\ba\s+([aeiouAEIOU])/g, 'an $1');
     result = result.replace(/\ban\s+([bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ])/g, 'a $1');
