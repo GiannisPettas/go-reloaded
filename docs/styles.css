@@ -308,15 +308,16 @@ body {
 }
 
 .demo-container {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    margin-bottom: 40px;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .demo-input, .demo-output {
     background: #f9fafb;
-    padding: 30px;
+    padding: 0;
     border-radius: 12px;
 }
 
@@ -344,12 +345,12 @@ body {
     font-family: 'Monaco', 'Menlo', monospace;
     font-size: 0.9rem;
     border: 2px solid #e5e7eb;
-    white-space: pre-wrap;
 }
 
 #transform-btn {
     display: block;
     margin: 0 auto;
+    width: 100%;
 }
 
 /* Architecture */
