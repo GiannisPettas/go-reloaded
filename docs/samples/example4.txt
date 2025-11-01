@@ -1,0 +1,5 @@
+Advanced test with large numbers: FFFF (hex) conversion.
+
+Article corrections: a hour vs an hour, a European vs an European.
+
+Complex case changes: make these five words (up, 5) ALL UPPERCASE please.

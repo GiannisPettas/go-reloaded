@@ -1,0 +1,5 @@
+Edge cases: empty transformations () and invalid (xyz) commands.
+
+Negative numbers: -1A (hex) and -1010 (bin) should work.
+
+Mixed content: Hello ,world !How are you ?Fine ;thanks .

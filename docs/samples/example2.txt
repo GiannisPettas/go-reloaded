@@ -1,0 +1,5 @@
+Binary 1111 (bin) equals fifteen in decimal.
+
+I saw a elephant and an university student.
+
+These words should be (low, 2) LOWERCASE now.

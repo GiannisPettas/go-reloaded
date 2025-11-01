@@ -1,0 +1,5 @@
+Command chaining test: 101 (bin) (hex) should work.
+
+Multiple transformations here (cap) and here (up) too.
+
+Spacing issues : fix these !And these ?marks .

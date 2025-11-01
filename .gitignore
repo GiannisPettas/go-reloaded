@@ -1,1 +1,3 @@
+# Ignore .txt files except in docs/
 *.txt
+!docs/**/*.txt
