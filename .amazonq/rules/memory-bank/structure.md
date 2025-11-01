@@ -2,59 +2,88 @@
 
 ## Directory Organization
 
+### Root Level
 ```
 go-reloaded/
-├── cmd/go-reloaded/          # CLI application entry point
-├── internal/                 # Private application packages
-│   ├── config/              # System configuration constants
-│   ├── parser/              # File reading and chunking logic
-│   ├── transformer/         # Dual-FSM text transformation engine
-│   ├── exporter/            # File writing operations
-│   ├── controller/          # Workflow orchestration
-│   └── testutils/           # Testing utilities and golden tests
-├── docs/                    # Technical documentation and web assets
-├── reports/                 # Agent analysis reports
-└── README.md               # Project documentation
+├── cmd/                      # CLI application entry point
+├── internal/                 # Core application packages
+├── docs/                     # Technical documentation
+├── reports/                  # Agent analysis reports
+├── go.mod                    # Go module definition
+├── LICENSE                   # MIT License
+└── README.md                 # Project documentation
 ```
 
-## Core Components
+### Core Components (`internal/`)
 
-### Entry Point
-- **cmd/go-reloaded/main.go**: CLI interface handling command-line arguments and error reporting
+#### `config/`
+- **Purpose**: System configuration constants and settings
+- **Key Files**: `config.go`, `config_test.go`
+- **Role**: Centralized configuration management for buffer sizes, processing limits
 
-### Internal Packages
-- **config/**: System-wide constants and configuration values
-- **parser/**: File reading with chunked processing for memory efficiency
-- **transformer/**: Dual finite state machine implementation for text transformations
-- **exporter/**: File writing operations with proper error handling
-- **controller/**: Orchestrates the entire processing pipeline
-- **testutils/**: Comprehensive testing framework with golden test suite
+#### `parser/`
+- **Purpose**: File reading and chunking operations
+- **Key Files**: `parser.go`, `parser_test.go`
+- **Role**: Handles input file processing, chunked reading for large files
 
-### Documentation
-- **docs/**: Contains technical architecture documentation and web presentation
-- **reports/**: Agent-generated analysis reports for each component
+#### `transformer/`
+- **Purpose**: Dual-FSM text transformation engine
+- **Key Files**: `transformer.go`, `transformer_test.go`
+- **Role**: Core text processing logic using finite state machines
+
+#### `exporter/`
+- **Purpose**: File writing operations
+- **Key Files**: `exporter.go`, `exporter_test.go`
+- **Role**: Handles output file generation and writing
+
+#### `controller/`
+- **Purpose**: Workflow orchestration
+- **Key Files**: `controller.go`, `controller_test.go`
+- **Role**: Coordinates the entire processing pipeline
+
+#### `testutils/`
+- **Purpose**: Testing utilities and golden tests
+- **Key Files**: `golden.go`, `testutils.go`, various test files
+- **Role**: Comprehensive test framework with 27 golden test cases
+
+### Application Entry (`cmd/`)
+- **`go-reloaded/`**: Main CLI application
+  - `main.go`: Application entry point
+  - `main_test.go`: Integration tests
+  - Example files for testing
+
+### Documentation (`docs/`)
+- Technical architecture documentation
+- Agent workflow specifications
+- Sample files and examples
+- Interactive documentation (HTML/CSS/JS)
 
 ## Architectural Patterns
 
+### Dual Finite State Machine (FSM)
+- Two FSMs working in tandem for text processing
+- State-based parsing for command recognition
+- Efficient memory usage through state transitions
+
 ### Layered Architecture
-- **Presentation Layer**: CLI interface (cmd/)
-- **Business Logic Layer**: Transformation engine (internal/transformer/)
-- **Data Access Layer**: File I/O operations (internal/parser/, internal/exporter/)
-- **Orchestration Layer**: Workflow coordination (internal/controller/)
+1. **Presentation Layer**: CLI interface (`cmd/`)
+2. **Control Layer**: Workflow orchestration (`controller/`)
+3. **Business Layer**: Text transformation logic (`transformer/`)
+4. **Data Layer**: File I/O operations (`parser/`, `exporter/`)
+5. **Configuration Layer**: System settings (`config/`)
 
-### Separation of Concerns
-- Each internal package has a single, well-defined responsibility
-- Clear interfaces between components
-- Minimal coupling between layers
+### Component Relationships
+```
+CLI (main.go) → Controller → Parser → Transformer → Exporter
+                    ↓
+                 Config (shared by all components)
+                    ↓
+                 TestUtils (testing framework)
+```
 
-### Modular Design
-- Independent packages that can be tested in isolation
-- Reusable components with clear APIs
-- Extensible architecture for adding new transformations
-
-## Component Relationships
-- **Controller** orchestrates the entire pipeline
-- **Parser** feeds data to **Transformer**
-- **Transformer** processes text using dual FSM architecture
-- **Exporter** writes processed results
-- **Config** provides system-wide constants to all components
+### Design Principles
+- **Single Responsibility**: Each package has a focused purpose
+- **Dependency Injection**: Components receive dependencies explicitly
+- **Testability**: Comprehensive test coverage with utilities
+- **Memory Efficiency**: Constant memory usage patterns
+- **Error Handling**: Consistent error propagation throughout layers

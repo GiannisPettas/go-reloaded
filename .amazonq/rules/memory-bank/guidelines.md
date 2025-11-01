@@ -2,152 +2,124 @@
 
 ## Code Quality Standards
 
+### Package Structure
+- **Single Responsibility**: Each package has one focused purpose (parser, transformer, exporter, controller)
+- **Internal Organization**: All core logic in `internal/` to prevent external imports
+- **Test Co-location**: Test files alongside source files with `_test.go` suffix
+- **Utility Separation**: Testing utilities in dedicated `testutils/` package
+
 ### Naming Conventions
 - **Constants**: ALL_CAPS with underscores (e.g., `CHUNK_BYTES`, `OVERLAP_WORDS`, `STATE_TEXT`)
-- **Types**: PascalCase (e.g., `Token`, `TokenProcessor`, `StreamProcessor`)
-- **Functions**: PascalCase for exported, camelCase for private (e.g., `ProcessText`, `fixArticles`)
-- **Variables**: camelCase (e.g., `wordBuilder`, `cmdBuilder`, `lastWordIdx`)
-- **Packages**: lowercase single words (e.g., `parser`, `transformer`, `controller`)
+- **Types**: PascalCase for exported types (`Token`, `TokenProcessor`, `GoldenTest`)
+- **Functions**: PascalCase for exported, camelCase for internal (`ProcessText`, `addToken`)
+- **Variables**: camelCase throughout (`tokenIdx`, `wordBuilder`, `cmdBuilder`)
 
 ### Error Handling Patterns
-- Always use `fmt.Errorf` with context and error wrapping using `%w` verb
-- Check errors immediately after operations that can fail
-- Provide meaningful error messages with operation context
+- **Wrapped Errors**: Use `fmt.Errorf` with `%w` verb for error chaining
+- **Context Preservation**: Include operation context in error messages
+- **Early Returns**: Check errors immediately and return early
 ```go
 if err != nil {
     return fmt.Errorf("failed to read chunk at offset %d: %w", offset, err)
 }
 ```
 
-### Function Structure
-- Keep functions focused on single responsibility
-- Use early returns to reduce nesting
-- Validate inputs at function start
-- Handle edge cases explicitly (empty strings, nil values)
+### Memory Management
+- **Fixed Buffers**: Use arrays instead of slices for predictable memory usage
+- **String Builders**: Use `strings.Builder` for efficient string concatenation
+- **Buffer Reuse**: Reset and reuse builders instead of creating new ones
+- **Chunked Processing**: Process large files in fixed-size chunks to maintain constant memory
 
 ## Architectural Patterns
 
-### State Machine Implementation
-- Use integer constants for states (iota pattern)
-- Maintain clear state transitions in switch statements
-- Separate low-level and high-level FSM concerns
-- Buffer management with fixed-size arrays for memory efficiency
-
-### Memory Management
-- Use fixed-size buffers to ensure constant memory usage
-- Implement buffer flushing when capacity is reached
-- Reset builders after use to prevent memory leaks
-- Prefer `strings.Builder` over string concatenation
-
-### File Processing Patterns
-- Implement chunked processing for large files
-- Handle UTF-8 boundaries properly with `AdjustToRuneBoundary`
-- Use overlap context to maintain processing continuity
-- Separate single-chunk and multi-chunk processing logic
-
-## Internal API Usage
-
-### Transformer Package
+### Finite State Machine Implementation
+- **State Constants**: Define states as `iota` constants
+- **State Switching**: Use switch statements for state transitions
+- **Dual FSM**: Separate low-level (parsing) and high-level (token processing) state machines
 ```go
-// Single-pass processing with dual FSM
-result := transformer.ProcessText(text)
-
-// Stream processing for large files
-processor := transformer.NewStreamProcessor()
-output := processor.ProcessChunk(data)
-finalOutput := processor.Flush()
+const (
+    STATE_TEXT = iota
+    STATE_COMMAND
+)
 ```
 
-### Parser Package
-```go
-// Read chunk with UTF-8 safety
-data, err := parser.ReadChunk(filepath, offset)
+### Token-Based Processing
+- **Token Types**: Define token types as constants (`WORD`, `PUNCTUATION`, `SPACE`, `NEWLINE`)
+- **Token Struct**: Simple struct with `Type` and `Value` fields
+- **Buffer Management**: Fixed-size token arrays with overflow handling
 
-// Handle word overlap between chunks
-overlap, remaining := parser.ExtractOverlapWords(text)
-merged := parser.PrependOverlapWords(overlap, newChunk)
-```
-
-### Controller Package
-```go
-// Main processing entry point
-err := controller.ProcessFile(inputPath, outputPath)
-```
-
-## Code Idioms and Patterns
-
-### String Processing
-- Use `strings.Fields` for word tokenization
-- Use `strings.Builder` for efficient string construction
-- Reset builders after use: `builder.Reset()`
-- Check string suffixes/prefixes before operations
-
-### Buffer Management
-```go
-// Fixed-size token buffer with overflow handling
-tokens [50]Token
-if tp.tokenIdx < len(tp.tokens) {
-    tp.tokens[tp.tokenIdx] = token
-    tp.tokenIdx++
-} else {
-    // Flush and shift logic
-}
-```
-
-### Rune Processing
-- Always work with `[]rune` for Unicode safety
-- Use `strings.ToLower()` for case-insensitive comparisons
-- Handle punctuation as separate tokens
-
-### File Operations
-- Always defer file closure: `defer file.Close()`
-- Use `os.Stat` to check file existence and get size
-- Handle `io.EOF` as expected condition, not error
+### Configuration Management
+- **Centralized Config**: All constants in `config/` package
+- **Import Pattern**: Import config package in all modules that need constants
+- **Naming**: Descriptive constant names (`CHUNK_BYTES`, `OVERLAP_WORDS`)
 
 ## Testing Standards
 
 ### Test Organization
-- Place tests in same package with `_test.go` suffix
-- Use table-driven tests for multiple scenarios
-- Implement golden tests for comprehensive validation
-- Test edge cases (empty input, large files, UTF-8 boundaries)
+- **Golden Tests**: Use markdown files for comprehensive test cases
+- **Test Utilities**: Centralized test helpers in `testutils/` package
+- **File Management**: Create and cleanup test files using utilities
+```go
+filepath, err := testutils.CreateTestFile(content)
+if err != nil {
+    t.Fatalf("Failed to create test file: %v", err)
+}
+defer testutils.CleanupTestFile(filepath)
+```
 
-### Test Utilities
-- Centralize test utilities in `internal/testutils`
-- Use golden files for expected output validation
-- Test both single-chunk and multi-chunk processing paths
+### Test Patterns
+- **Table-Driven Tests**: Use structs for test cases with multiple scenarios
+- **Error Testing**: Verify both success and failure cases
+- **Boundary Testing**: Test edge cases (empty files, exact chunk sizes, UTF-8 boundaries)
+- **Integration Testing**: Test complete workflows through controller
 
-## Documentation Standards
+### Test Naming
+- **Descriptive Names**: `TestReadChunkExactSize`, `TestAdjustToRuneBoundaryIncomplete`
+- **Scenario Coverage**: Test normal, edge, and error cases
+- **Helper Functions**: Use helper functions for common validation patterns
 
-### Function Comments
-- Document exported functions with purpose and behavior
-- Include parameter descriptions for complex functions
-- Document return values and error conditions
-- Use complete sentences starting with function name
-
-### Package Comments
-- Each package should have a package-level comment
-- Describe the package's primary responsibility
-- Include usage examples for complex packages
-
-## Performance Considerations
+## Performance Optimization
 
 ### Memory Efficiency
-- Use fixed-size buffers to prevent unbounded growth
-- Implement proper buffer flushing strategies
-- Avoid string concatenation in loops
-- Reset reusable objects after use
+- **Constant Memory**: Maintain ~8KB memory usage regardless of file size
+- **Single Pass**: Process text in one pass through dual FSM
+- **Buffer Recycling**: Reuse buffers and builders instead of allocating new ones
+- **UTF-8 Safety**: Use `AdjustToRuneBoundary` to prevent character corruption
 
-### Processing Efficiency
-- Single-pass algorithms preferred over multi-pass
-- Minimize memory allocations in hot paths
-- Use appropriate data structures (arrays vs slices)
-- Implement streaming for large data processing
+### Processing Patterns
+- **Chunked Reading**: Read files in `CHUNK_BYTES` sized chunks
+- **Overlap Handling**: Maintain word context between chunks using `OVERLAP_WORDS`
+- **State Preservation**: Maintain FSM state across chunk boundaries
+- **Efficient String Operations**: Use `strings.Builder` for concatenation
 
-## Configuration Management
+## Code Documentation
 
-### Constants Organization
-- Centralize configuration in `internal/config` package
-- Use meaningful constant names with units where applicable
-- Group related constants together
-- Document the purpose of each configuration value
+### Comment Standards
+- **Package Comments**: Brief description of package purpose
+- **Function Comments**: Describe what function does, not how
+- **Complex Logic**: Explain non-obvious algorithms and state transitions
+- **Constants**: Document purpose and usage of configuration constants
+
+### API Design
+- **Exported Functions**: Clear, descriptive names with proper error handling
+- **Parameter Validation**: Check inputs and return meaningful errors
+- **Return Values**: Consistent error handling patterns
+- **Interface Simplicity**: Minimal, focused function signatures
+
+## Development Workflow
+
+### File Processing Pipeline
+1. **Controller**: Orchestrates the workflow
+2. **Parser**: Reads and chunks input files
+3. **Transformer**: Applies FSM-based transformations
+4. **Exporter**: Writes processed output
+
+### Error Propagation
+- **Consistent Wrapping**: Use `fmt.Errorf` with `%w` for error chains
+- **Context Information**: Include relevant details (file paths, offsets)
+- **Early Termination**: Return errors immediately, don't continue processing
+
+### Testing Integration
+- **Comprehensive Coverage**: Test all transformation scenarios
+- **Golden Test Suite**: 27 test cases covering all features
+- **Automated Validation**: Use `go test -count=1 ./...` for full test runs
