@@ -147,14 +147,23 @@ Convert 255 to decimal and make it UP.
 
 ## Testing
 
-### Run All Tests
+### Run All Tests (Recommended)
 ```bash
-go test -count=1 ./...
+cd internal/testutils && go test -v -run TestAllProject
 ```
+This single command runs all tests including the 27 golden test cases with nice formatting.
 
-### Run Golden Test Suite
+### Alternative Test Commands
 ```bash
-cd internal/testutils && go test -v
+# Run all tests manually
+go test -count=1 ./...
+
+# Run golden test suite only
+cd internal/testutils && go test -v -run TestGoldenCases
+
+# Run specific package tests
+go test ./internal/transformer/
+go test ./internal/config/
 ```
 
 The project includes 27 comprehensive test cases covering all transformation scenarios.

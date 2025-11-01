@@ -1,7 +1,6 @@
 package transformer
 
 import (
-	"go-reloaded/internal/config"
 	"strconv"
 	"strings"
 )
@@ -9,7 +8,6 @@ import (
 // Token types
 const (
 	WORD = iota
-	COMMAND
 	PUNCTUATION
 	SPACE
 	NEWLINE
@@ -187,35 +185,36 @@ func ProcessText(text string) string {
 
 		switch state {
 		case STATE_TEXT:
-			if r == '(' {
+			switch r {
+			case '(':
 				// Flush current word
 				if wordBuilder.Len() > 0 {
 					processor.addToken(Token{WORD, wordBuilder.String()})
 					wordBuilder.Reset()
 				}
 				state = STATE_COMMAND
-			} else if r == ' ' || r == '\t' {
+			case ' ', '\t':
 				// Flush word and add space
 				if wordBuilder.Len() > 0 {
 					processor.addToken(Token{WORD, wordBuilder.String()})
 					wordBuilder.Reset()
 				}
 				processor.addToken(Token{SPACE, " "})
-			} else if r == '\n' {
+			case '\n':
 				// Flush word and add newline
 				if wordBuilder.Len() > 0 {
 					processor.addToken(Token{WORD, wordBuilder.String()})
 					wordBuilder.Reset()
 				}
 				processor.addToken(Token{NEWLINE, "\n"})
-			} else if r == ',' || r == '.' || r == '!' || r == '?' || r == ';' || r == ':' {
+			case ',', '.', '!', '?', ';', ':':
 				// Flush word and add punctuation
 				if wordBuilder.Len() > 0 {
 					processor.addToken(Token{WORD, wordBuilder.String()})
 					wordBuilder.Reset()
 				}
 				processor.addToken(Token{PUNCTUATION, string(r)})
-			} else {
+			default:
 				wordBuilder.WriteRune(r)
 			}
 
@@ -254,7 +253,8 @@ func fixArticles(text string) string {
 
 		words := strings.Fields(line)
 		for i := 0; i < len(words)-1; i++ {
-			if strings.ToLower(words[i]) == "a" || strings.ToLower(words[i]) == "an" {
+			switch strings.ToLower(words[i]) {
+			case "a", "an":
 				nextWord := words[i+1]
 				if len(nextWord) > 0 {
 					// Remove punctuation for vowel check
@@ -287,95 +287,4 @@ func fixArticles(text string) string {
 		lines[lineIdx] = strings.Join(words, " ")
 	}
 	return strings.Join(lines, "\n")
-}
-
-// Legacy compatibility functions
-func TokenizeText(text string) []string {
-	return strings.Fields(ProcessText(text))
-}
-
-func ApplyAllTransformations(tokens []string) []string {
-	return strings.Fields(ProcessText(strings.Join(tokens, " ")))
-}
-
-func ApplyAllTransformationsWithContext(currentChunk, overlapContext string) []string {
-	mergedText := overlapContext
-	if overlapContext != "" && currentChunk != "" {
-		mergedText += " " + currentChunk
-	} else if currentChunk != "" {
-		mergedText = currentChunk
-	}
-	return strings.Fields(ProcessText(mergedText))
-}
-
-func TokensToString(tokens []string) string {
-	return strings.Join(tokens, " ")
-}
-
-// StreamProcessor maintains FSM state across chunks
-type StreamProcessor struct {
-	buffer    strings.Builder
-	processor *TokenProcessor
-	output    strings.Builder
-}
-
-func NewStreamProcessor() *StreamProcessor {
-	return &StreamProcessor{
-		processor: &TokenProcessor{},
-	}
-}
-
-func (sp *StreamProcessor) ProcessChunk(data []byte) string {
-	// Add chunk to buffer
-	sp.buffer.Write(data)
-	bufferText := sp.buffer.String()
-
-	// If buffer is getting large, process it in segments
-	if sp.buffer.Len() > config.CHUNK_BYTES*2 {
-		// Find last complete sentence or word boundary
-		lastBoundary := strings.LastIndexAny(bufferText, ".!?")
-		if lastBoundary == -1 {
-			lastBoundary = strings.LastIndex(bufferText, " ")
-		}
-
-		if lastBoundary > 0 {
-			completeText := bufferText[:lastBoundary+1]
-			remaining := bufferText[lastBoundary+1:]
-
-			// Reset buffer with remaining text
-			sp.buffer.Reset()
-			sp.buffer.WriteString(remaining)
-
-			// Process and accumulate output
-			processed := ProcessText(completeText)
-			sp.output.WriteString(processed)
-
-			// Return accumulated output
-			result := sp.output.String()
-			sp.output.Reset()
-			return result
-		}
-	}
-
-	return ""
-}
-
-func (sp *StreamProcessor) Flush() string {
-	// Process any remaining text in buffer
-	remaining := sp.buffer.String()
-	sp.buffer.Reset()
-
-	// Add any accumulated output
-	accumulated := sp.output.String()
-	sp.output.Reset()
-
-	if remaining != "" {
-		processed := ProcessText(remaining)
-		if accumulated != "" {
-			return accumulated + processed
-		}
-		return processed
-	}
-
-	return accumulated
 }
