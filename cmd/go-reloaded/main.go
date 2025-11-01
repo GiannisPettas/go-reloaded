@@ -2,11 +2,18 @@ package main
 
 import (
 	"fmt"
+	"go-reloaded/internal/config"
 	"go-reloaded/internal/controller"
 	"os"
 )
 
 func main() {
+	// Validate system constants
+	if err := config.ValidateConstants(); err != nil {
+		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
+		os.Exit(1)
+	}
+	
 	// Check command line arguments
 	if len(os.Args) != 3 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <input_file> <output_file>\n", os.Args[0])

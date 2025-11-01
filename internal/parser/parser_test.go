@@ -8,6 +8,8 @@ import (
 	"unicode/utf8"
 )
 
+// Purpose: Tests constants during development/CI
+
 func TestReadChunkExactSize(t *testing.T) {
 	// Create test file with exactly CHUNK_BYTES content
 	content := strings.Repeat("a", config.CHUNK_BYTES)
@@ -16,16 +18,16 @@ func TestReadChunkExactSize(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer testutils.CleanupTestFile(filepath)
-	
+
 	data, err := ReadChunk(filepath, 0)
 	if err != nil {
 		t.Fatalf("ReadChunk failed: %v", err)
 	}
-	
+
 	if len(data) != config.CHUNK_BYTES {
 		t.Errorf("Expected %d bytes, got %d", config.CHUNK_BYTES, len(data))
 	}
-	
+
 	if string(data) != content {
 		t.Errorf("Content mismatch")
 	}
@@ -39,16 +41,16 @@ func TestReadChunkLargerFile(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer testutils.CleanupTestFile(filepath)
-	
+
 	data, err := ReadChunk(filepath, 0)
 	if err != nil {
 		t.Fatalf("ReadChunk failed: %v", err)
 	}
-	
+
 	if len(data) != config.CHUNK_BYTES {
 		t.Errorf("Expected %d bytes, got %d", config.CHUNK_BYTES, len(data))
 	}
-	
+
 	expectedContent := strings.Repeat("b", config.CHUNK_BYTES)
 	if string(data) != expectedContent {
 		t.Errorf("Content mismatch for first chunk")
@@ -63,16 +65,16 @@ func TestReadChunkSmallerFile(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer testutils.CleanupTestFile(filepath)
-	
+
 	data, err := ReadChunk(filepath, 0)
 	if err != nil {
 		t.Fatalf("ReadChunk failed: %v", err)
 	}
-	
+
 	if len(data) != len(content) {
 		t.Errorf("Expected %d bytes, got %d", len(content), len(data))
 	}
-	
+
 	if string(data) != content {
 		t.Errorf("Content mismatch")
 	}
@@ -84,12 +86,12 @@ func TestReadChunkEmptyFile(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer testutils.CleanupTestFile(filepath)
-	
+
 	data, err := ReadChunk(filepath, 0)
 	if err != nil {
 		t.Fatalf("ReadChunk failed: %v", err)
 	}
-	
+
 	if len(data) != 0 {
 		t.Errorf("Expected 0 bytes for empty file, got %d", len(data))
 	}
@@ -109,17 +111,17 @@ func TestReadChunkWithOffset(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer testutils.CleanupTestFile(filepath)
-	
+
 	// Read second chunk
 	data, err := ReadChunk(filepath, int64(config.CHUNK_BYTES))
 	if err != nil {
 		t.Fatalf("ReadChunk with offset failed: %v", err)
 	}
-	
+
 	if len(data) != config.CHUNK_BYTES {
 		t.Errorf("Expected %d bytes, got %d", config.CHUNK_BYTES, len(data))
 	}
-	
+
 	expectedContent := strings.Repeat("c", config.CHUNK_BYTES)
 	if string(data) != expectedContent {
 		t.Errorf("Content mismatch for second chunk")
@@ -140,7 +142,7 @@ func TestAdjustToRuneBoundaryIncomplete(t *testing.T) {
 	// "é" is 2 bytes: 0xC3 0xA9
 	incompleteUTF8 := []byte("Hello é")
 	incompleteUTF8 = append(incompleteUTF8[:len(incompleteUTF8)-1], 0xC3) // Remove last byte of é
-	
+
 	adjusted := AdjustToRuneBoundary(incompleteUTF8)
 	expected := "Hello "
 	if string(adjusted) != expected {
@@ -152,10 +154,10 @@ func TestAdjustToRuneBoundaryMultiByte(t *testing.T) {
 	// Test with various multi-byte characters
 	content := "Hello 世界! 🚀"
 	bytes := []byte(content)
-	
+
 	// Truncate in middle of multi-byte character
 	truncated := bytes[:len(bytes)-2] // Remove part of 🚀
-	
+
 	adjusted := AdjustToRuneBoundary(truncated)
 	// Should end at complete character before 🚀
 	expected := "Hello 世界! "
@@ -169,23 +171,23 @@ func TestReadChunkWithRuneBoundary(t *testing.T) {
 	base := strings.Repeat("a", config.CHUNK_BYTES-10)
 	unicode := "世界🚀" // Multi-byte characters
 	content := base + unicode
-	
+
 	filepath, err := testutils.CreateTestFile(content)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer testutils.CleanupTestFile(filepath)
-	
+
 	data, err := ReadChunk(filepath, 0)
 	if err != nil {
 		t.Fatalf("ReadChunk failed: %v", err)
 	}
-	
+
 	// Verify no UTF-8 corruption
 	if !isValidUTF8(data) {
 		t.Errorf("Chunk contains invalid UTF-8")
 	}
-	
+
 	// Verify chunk ends at rune boundary
 	if len(data) > 0 && data[len(data)-1] >= 0x80 {
 		// If last byte is part of multi-byte sequence, verify it's complete
@@ -198,13 +200,13 @@ func TestReadChunkWithRuneBoundary(t *testing.T) {
 
 func TestExtractOverlapWords(t *testing.T) {
 	text := "word1 word2 word3 word4 word5 word6 word7 word8"
-	
+
 	overlap, remaining := ExtractOverlapWords(text)
-	
+
 	// Should extract last OVERLAP_WORDS words
 	expectedOverlap := "word1 word2 word3 word4 word5 word6 word7 word8"
 	expectedRemaining := ""
-	
+
 	if len(strings.Fields(text)) <= config.OVERLAP_WORDS {
 		// If total words <= OVERLAP_WORDS, all words go to overlap
 		if overlap != expectedOverlap || remaining != expectedRemaining {
@@ -222,9 +224,9 @@ func TestExtractOverlapWords(t *testing.T) {
 func TestPrependOverlapWords(t *testing.T) {
 	overlap := "word1 word2"
 	newChunk := "word3 word4 word5"
-	
+
 	result := PrependOverlapWords(overlap, newChunk)
-	
+
 	expected := "word1 word2 word3 word4 word5"
 	if result != expected {
 		t.Errorf("Expected %q, got %q", expected, result)
@@ -234,9 +236,9 @@ func TestPrependOverlapWords(t *testing.T) {
 func TestPrependOverlapWordsEmpty(t *testing.T) {
 	overlap := ""
 	newChunk := "word1 word2"
-	
+
 	result := PrependOverlapWords(overlap, newChunk)
-	
+
 	if result != newChunk {
 		t.Errorf("Expected %q, got %q", newChunk, result)
 	}

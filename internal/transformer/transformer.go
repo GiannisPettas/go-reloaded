@@ -28,9 +28,9 @@ const (
 
 // High-level FSM for token processing
 type TokenProcessor struct {
-	tokens    [50]Token
-	tokenIdx  int
-	output    strings.Builder
+	tokens   [50]Token
+	tokenIdx int
+	output   strings.Builder
 }
 
 func (tp *TokenProcessor) addToken(token Token) {
@@ -64,13 +64,13 @@ func (tp *TokenProcessor) addToken(token Token) {
 				tp.output.WriteByte('\n')
 			}
 		}
-		
+
 		// Shift remaining tokens to beginning
 		for i := 0; i < halfSize; i++ {
 			tp.tokens[i] = tp.tokens[halfSize+i]
 		}
 		tp.tokenIdx = halfSize
-		
+
 		// Add new token
 		tp.tokens[tp.tokenIdx] = token
 		tp.tokenIdx++
@@ -81,7 +81,7 @@ func (tp *TokenProcessor) processCommand(cmdValue string) {
 	if tp.tokenIdx == 0 {
 		return // No words to transform
 	}
-	
+
 	// Find last word token
 	lastWordIdx := -1
 	for i := tp.tokenIdx - 1; i >= 0; i-- {
@@ -90,11 +90,11 @@ func (tp *TokenProcessor) processCommand(cmdValue string) {
 			break
 		}
 	}
-	
+
 	if lastWordIdx == -1 {
 		return
 	}
-	
+
 	// Parse command
 	if strings.Contains(cmdValue, ",") {
 		parts := strings.Split(cmdValue, ",")
@@ -174,17 +174,17 @@ func ProcessText(text string) string {
 	if text == "" {
 		return ""
 	}
-	
+
 	runes := []rune(text)
 	processor := &TokenProcessor{}
-	
+
 	state := STATE_TEXT
 	var wordBuilder strings.Builder
 	var cmdBuilder strings.Builder
-	
+
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
-		
+
 		switch state {
 		case STATE_TEXT:
 			if r == '(' {
@@ -218,7 +218,7 @@ func ProcessText(text string) string {
 			} else {
 				wordBuilder.WriteRune(r)
 			}
-			
+
 		case STATE_COMMAND:
 			if r == ')' {
 				// Process command
@@ -230,15 +230,15 @@ func ProcessText(text string) string {
 			}
 		}
 	}
-	
+
 	// Flush remaining word
 	if wordBuilder.Len() > 0 {
 		processor.addToken(Token{WORD, wordBuilder.String()})
 	}
-	
+
 	// Flush all tokens to output
 	processor.flushTokens()
-	
+
 	// Post-process articles
 	result := processor.output.String()
 	return fixArticles(result)
@@ -251,7 +251,7 @@ func fixArticles(text string) string {
 		if line == "" {
 			continue
 		}
-		
+
 		words := strings.Fields(line)
 		for i := 0; i < len(words)-1; i++ {
 			if strings.ToLower(words[i]) == "a" || strings.ToLower(words[i]) == "an" {
@@ -262,7 +262,7 @@ func fixArticles(text string) string {
 					for strings.HasSuffix(cleanWord, ".") || strings.HasSuffix(cleanWord, ",") || strings.HasSuffix(cleanWord, "!") || strings.HasSuffix(cleanWord, "?") || strings.HasSuffix(cleanWord, ";") || strings.HasSuffix(cleanWord, ":") {
 						cleanWord = cleanWord[:len(cleanWord)-1]
 					}
-					
+
 					if len(cleanWord) > 0 {
 						first := strings.ToLower(cleanWord)[0]
 						if first == 'a' || first == 'e' || first == 'i' || first == 'o' || first == 'u' || first == 'h' {
@@ -329,7 +329,7 @@ func (sp *StreamProcessor) ProcessChunk(data []byte) string {
 	// Add chunk to buffer
 	sp.buffer.Write(data)
 	bufferText := sp.buffer.String()
-	
+
 	// If buffer is getting large, process it in segments
 	if sp.buffer.Len() > config.CHUNK_BYTES*2 {
 		// Find last complete sentence or word boundary
@@ -337,26 +337,26 @@ func (sp *StreamProcessor) ProcessChunk(data []byte) string {
 		if lastBoundary == -1 {
 			lastBoundary = strings.LastIndex(bufferText, " ")
 		}
-		
+
 		if lastBoundary > 0 {
 			completeText := bufferText[:lastBoundary+1]
 			remaining := bufferText[lastBoundary+1:]
-			
+
 			// Reset buffer with remaining text
 			sp.buffer.Reset()
 			sp.buffer.WriteString(remaining)
-			
+
 			// Process and accumulate output
 			processed := ProcessText(completeText)
 			sp.output.WriteString(processed)
-			
+
 			// Return accumulated output
 			result := sp.output.String()
 			sp.output.Reset()
 			return result
 		}
 	}
-	
+
 	return ""
 }
 
@@ -364,11 +364,11 @@ func (sp *StreamProcessor) Flush() string {
 	// Process any remaining text in buffer
 	remaining := sp.buffer.String()
 	sp.buffer.Reset()
-	
+
 	// Add any accumulated output
 	accumulated := sp.output.String()
 	sp.output.Reset()
-	
+
 	if remaining != "" {
 		processed := ProcessText(remaining)
 		if accumulated != "" {
@@ -376,6 +376,6 @@ func (sp *StreamProcessor) Flush() string {
 		}
 		return processed
 	}
-	
+
 	return accumulated
 }
