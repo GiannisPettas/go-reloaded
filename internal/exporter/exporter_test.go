@@ -4,6 +4,7 @@ import (
 	"go-reloaded/internal/testutils"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -129,10 +130,20 @@ func TestWriteChunkUnicodeContent(t *testing.T) {
 }
 
 func TestWriteChunkInvalidPath(t *testing.T) {
-	// Use a path with invalid characters on Windows
-	err := WriteChunk("<>:\"|?*invalid.txt", "content")
+	var invalidPath string
+	
+	// Use OS-specific invalid paths
+	if runtime.GOOS == "windows" {
+		// Windows invalid characters: < > : " | ? *
+		invalidPath = "<>:\"|?*invalid.txt"
+	} else {
+		// Unix/Linux: null byte is invalid
+		invalidPath = "/tmp/invalid\x00file.txt"
+	}
+	
+	err := WriteChunk(invalidPath, "content")
 	if err == nil {
-		t.Errorf("WriteChunk should return error for invalid path")
+		t.Errorf("WriteChunk should return error for invalid path: %s", invalidPath)
 	}
 }
 
