@@ -34,3 +34,9 @@ Include relevant details in error messages:
 - Test both success and failure scenarios
 - Verify error message content and wrapped errors
 - Use table-driven tests for multiple error conditions
+
+## Implementation Standards
+- NEVER use hardcoded patterns specific to golden test cases
+- Implement general algorithmic solutions that work for any input
+- Functions must handle arbitrary text, not just test-specific strings
+- Use pattern matching, regex, or algorithmic approaches instead of literal string replacements

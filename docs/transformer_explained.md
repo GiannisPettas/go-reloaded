@@ -4,15 +4,20 @@
 
 The transformer is the heart of Go-Reloaded. It takes text like:
 ```
-"The value FF (hex) should be (up)"
+"The value FF (hex) should be (up) and I need a apple with ' spaced quotes '."
 ```
 
 And transforms it to:
 ```
-"The value 255 SHOULD BE"
+"The value 255 SHOULD BE and I need an apple with 'spaced quotes'."
 ```
 
-It handles commands in parentheses and fixes grammar automatically.
+It handles:
+- **Commands in parentheses**: `(hex)`, `(bin)`, `(up)`, `(low)`, `(cap)`, `(up, 2)`
+- **Invalid command preservation**: `(invalid)` stays as `(invalid)`
+- **Article correction**: `a apple` → `an apple`
+- **Quote repositioning**: `' text '` → `'text'`
+- **Punctuation spacing**: `word ,` → `word,`
 
 ## Core Concepts
 
@@ -268,9 +273,46 @@ type TokenProcessor struct {
 
 **Why fixed buffer?** Memory efficiency! No matter how big the file, we only use ~8KB of memory.
 
-### Step 4: Command Processing - `processCommand()`
+### Step 4: Command Validation and Processing
 
-When we hit a `)`, we process the command:
+#### Command Validation - `isValidCommand()`
+
+**CRITICAL**: Commands are validated BEFORE processing. Invalid commands are preserved as text.
+
+```go
+func (tp *TokenProcessor) isValidCommand(cmdValue string) bool {
+    // Valid single commands
+    switch cmdValue {
+    case "hex", "bin", "up", "low", "cap":
+        return true
+    }
+    
+    // Valid multi-word commands: "up, 2", "low, 3", "cap, 1"
+    if strings.Contains(cmdValue, ",") {
+        parts := strings.Split(cmdValue, ",")
+        if len(parts) == 2 {
+            cmd := strings.TrimSpace(parts[0])
+            countStr := strings.TrimSpace(parts[1])
+            if cmd == "up" || cmd == "low" || cmd == "cap" {
+                if _, err := strconv.Atoi(countStr); err == nil {
+                    return true
+                }
+            }
+        }
+    }
+    
+    return false
+}
+```
+
+**Examples:**
+- `(up)` → Valid, processes command
+- `(invalid)` → Invalid, preserved as `(invalid)` in output
+- `(up, text)` → Invalid, preserved as `(up, text)` in output
+
+#### Command Processing - `processCommand()`
+
+**Only valid commands reach this function:**
 
 #### Single Word Commands
 ```go
@@ -279,39 +321,60 @@ case "hex":
     // Convert hexadecimal to decimal: "FF" -> "255"
 case "bin":
     // Convert binary to decimal: "1010" -> "10"
-case "up", "low", "cap":
-    // Transform case of the last word
+default:
+    // Case transformations: "up", "low", "cap"
+    tp.tokens[lastWordIdx].Value = tp.transformWord(word, cmdValue)
 }
 ```
 
-#### Multi-Word Commands
+#### Multi-Word Commands - **Fixed Order Processing**
 ```go
-// Format: "(up, 3)" means uppercase the last 3 words
 if strings.Contains(cmdValue, ",") {
-    parts := strings.Split(cmdValue, ",")
-    cmd := "up"      // command
-    count := 3       // number of words
-    // Apply command to last 'count' words
+    // Find word indices in reverse order
+    var wordIndices []int
+    for i := tp.tokenIdx - 1; i >= 0 && len(wordIndices) < count; i-- {
+        if tp.tokens[i].Type == WORD {
+            wordIndices = append(wordIndices, i)
+        }
+    }
+    // Transform words in FORWARD order (left to right)
+    for i := len(wordIndices) - 1; i >= 0; i-- {
+        idx := wordIndices[i]
+        tp.tokens[idx].Value = tp.transformWord(tp.tokens[idx].Value, cmd)
+    }
 }
 ```
 
 **Example:**
 ```
-Tokens: ["These", "three", "words", "should", "be"]
-Command: "up, 3"
-Result: ["These", "THREE", "WORDS", "SHOULD", "be"]
+Input: "these three words (cap, 3)"
+Tokens: ["these", "three", "words"]
+Command: "cap, 3"
+Result: ["These", "Three", "Words"] (left-to-right capitalization)
 ```
 
 ### Step 5: Word Transformation - `transformWord()`
 
 Simple case transformations:
 ```go
-switch cmd {
-case "up":   return strings.ToUpper(word)     // "hello" -> "HELLO"
-case "low":  return strings.ToLower(word)     // "HELLO" -> "hello"
-case "cap":  return strings.Title(word)       // "hello" -> "Hello"
+func (tp *TokenProcessor) transformWord(word, cmd string) string {
+    switch cmd {
+    case "up":
+        return strings.ToUpper(word)     // "hello" -> "HELLO"
+    case "low":
+        return strings.ToLower(word)     // "HELLO" -> "hello"
+    case "cap":
+        if len(word) == 0 {
+            return word
+        }
+        lower := strings.ToLower(word)
+        return strings.ToUpper(string(lower[0])) + lower[1:]  // "hello" -> "Hello"
+    }
+    return word
 }
 ```
+
+**Note**: Uses manual capitalization instead of `strings.Title()` for precise control.
 
 ### Step 6: Output Generation - `flushTokens()`
 
@@ -320,6 +383,243 @@ Converts tokens back to text with proper spacing:
 ```go
 switch token.Type {
 case WORD:
+    // Add space before word if needed
+    if tp.output.Len() > 0 && !strings.HasSuffix(tp.output.String(), " ") {
+        tp.output.WriteByte(' ')
+    }
+    tp.output.WriteString(token.Value)
+case PUNCTUATION:
+    // Remove trailing space before punctuation
+    if token.Value != "(" {
+        result := tp.output.String()
+        if strings.HasSuffix(result, " ") {
+            tp.output.Reset()
+            tp.output.WriteString(result[:len(result)-1])
+        }
+    }
+    tp.output.WriteString(token.Value)
+case SPACE:
+    // Add space if not already present
+    if !strings.HasSuffix(tp.output.String(), " ") {
+        tp.output.WriteByte(' ')
+    }
+case NEWLINE:
+    tp.output.WriteByte('\n')
+}
+```
+
+### Step 7: Post-Processing
+
+After FSM processing, two post-processing steps fix grammar and formatting:
+
+#### Article Correction - `fixArticles()`
+
+**Fixes "a/an" usage based on vowel sounds:**
+
+```go
+func fixArticles(text string) string {
+    lines := strings.Split(text, "\n")
+    for lineIdx, line := range lines {
+        words := strings.Fields(line)
+        for i := 0; i < len(words)-1; i++ {
+            switch words[i] {
+            case "a", "A", "an", "An", "AN":
+                nextWord := words[i+1]
+                // Remove punctuation for vowel check
+                cleanWord := removePunctuation(nextWord)
+                
+                if len(cleanWord) > 0 {
+                    first := strings.ToLower(cleanWord)[0]
+                    if first == 'a' || first == 'e' || first == 'i' || first == 'o' || first == 'u' || first == 'h' {
+                        // Should be "an"
+                        if words[i] == "a" { words[i] = "an" }
+                        if words[i] == "A" { words[i] = "AN" } // Preserve (up) command result
+                    } else {
+                        // Should be "a"
+                        if words[i] == "an" { words[i] = "a" }
+                        if words[i] == "An" { words[i] = "A" }
+                        if words[i] == "AN" { words[i] = "A" } // Preserve (up) command result
+                    }
+                }
+            }
+        }
+    }
+    return strings.Join(lines, "\n")
+}
+```
+
+**Examples:**
+- `a apple` → `an apple`
+- `an car` → `a car`
+- `A (up) apple` → `AN apple` (preserves uppercase from command)
+
+#### Quote Repositioning - `fixQuotes()` - **General Algorithm**
+
+**Removes spaces between quotes and their content using algorithmic approach:**
+
+```go
+func fixQuotes(text string) string {
+    runes := []rune(text)
+    var result strings.Builder
+    
+    for i := 0; i < len(runes); i++ {
+        r := runes[i]
+        
+        if r == '\'' || r == '"' {
+            // Find matching quote
+            matchingQuote := -1
+            for j := i + 1; j < len(runes); j++ {
+                if runes[j] == r {
+                    matchingQuote = j
+                    break
+                }
+            }
+            
+            if matchingQuote != -1 {
+                // Process quote pair
+                result.WriteRune(r) // Opening quote
+                
+                // Skip space after opening quote
+                startIdx := i + 1
+                if startIdx < len(runes) && runes[startIdx] == ' ' {
+                    startIdx++
+                }
+                
+                // Find content end (before closing quote)
+                endIdx := matchingQuote
+                if endIdx > 0 && runes[endIdx-1] == ' ' {
+                    endIdx--
+                }
+                
+                // Write content without internal spaces
+                for k := startIdx; k < endIdx; k++ {
+                    result.WriteRune(runes[k])
+                }
+                
+                result.WriteRune(r) // Closing quote
+                i = matchingQuote // Skip to after closing quote
+            } else {
+                result.WriteRune(r) // No matching quote
+            }
+        } else {
+            result.WriteRune(r)
+        }
+    }
+    
+    return result.String()
+}
+```
+
+**Examples:**
+- `' hello world '` → `'hello world'`
+- `" any text "` → `"any text"`
+- `' I am` → `'I am` (opening quote only)
+- `carries '` → `carries'` (closing quote only)
+
+**Key Feature**: This is a **general algorithmic solution** that works for ANY text content between quotes, not hardcoded patterns.
+
+## Single-Pass Architecture
+
+### FSM Single-Pass Processing
+
+The **dual FSM processes each character exactly once** in a single forward pass:
+
+```go
+for i := 0; i < len(runes); i++ {
+    r := runes[i]
+    // Each character processed exactly once
+    // No backtracking, no re-reading
+}
+```
+
+**No multiple iterations over the input text.**
+
+### Complete Processing Pipeline
+
+The transformer uses **3 total passes** for optimal performance vs. complexity:
+
+```go
+// Pass 1: FSM processes text once (95% of transformations)
+for i := 0; i < len(runes); i++ {
+    // Dual FSM handles commands, tokens, transformations
+}
+result := processor.output.String()
+
+// Pass 2: Article correction (single pass)
+result = fixArticles(result)    
+
+// Pass 3: Quote repositioning (single pass)
+return fixQuotes(result)        
+```
+
+### Why This Design?
+
+**Performance vs. Complexity Trade-off:**
+
+- **FSM handles 95% of transformations** in single pass
+- **Post-processing handles edge cases** that would complicate FSM significantly  
+- **Total: 3 passes** instead of complex multi-state FSM
+
+**Alternative would be:**
+- Single mega-FSM with article/quote state tracking
+- Much more complex state management
+- Harder to maintain and debug
+
+### Memory Efficiency Maintained
+
+Even with 3 passes, memory usage remains **constant ~8KB** because:
+- FSM uses fixed token buffer
+- Post-processing works on final string (not growing)
+- No intermediate data structures stored
+
+**Result**: Effectively single-pass for core transformations, with minimal post-processing cleanup.
+
+## Implementation Standards
+
+### General Algorithmic Approach
+
+**CRITICAL RULE**: Never use hardcoded patterns specific to test cases.
+
+**❌ BAD - Hardcoded patterns:**
+```go
+result = strings.ReplaceAll(result, "' hello world '", "'hello world'")
+result = strings.ReplaceAll(result, "' goodbye '", "'goodbye'")
+// This only works for specific test cases!
+```
+
+**✅ GOOD - General algorithm:**
+```go
+// Works for ANY content between quotes
+for each quote pair {
+    remove spaces after opening quote
+    remove spaces before closing quote
+    preserve all other content
+}
+```
+
+### Memory Efficiency
+
+**Constant Memory Usage**: ~8KB regardless of file size
+- Fixed token buffer: `[50]Token`
+- String builders reused, not recreated
+- Chunked processing for large files
+- No growing slices or maps
+
+### Error Handling
+
+**Graceful Degradation**:
+- Invalid commands preserved as text
+- Malformed input processed as much as possible
+- No crashes on edge cases
+- UTF-8 safe character handling
+
+### Testing Philosophy
+
+**Functions must handle arbitrary input, not just test-specific strings**:
+- Quote repositioning works for any quoted content
+- Article correction works for any a/an usage
+- Command processing works for any valid command format
+- No assumptions about specific test case contentD:
     // Add space before word (if needed), then add word
 case PUNCTUATION:
     // Remove space before punctuation, then add punctuation

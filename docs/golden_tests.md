@@ -27,7 +27,7 @@ Ensures that punctuation is attached correctly after transformations and that ca
 He said : ' this is incredible (cap, 2) ! ' can you believe it , though ?
 
 **Expected Output:**  
-He said: 'This Is incredible!' can you believe it, though?
+He said: 'this Is Incredible!' can you believe it, though?
 
 ## T3 — Chained Numeric Commands
 

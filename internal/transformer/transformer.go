@@ -113,13 +113,17 @@ func (tp *TokenProcessor) processCommand(cmdValue string) {
 			cmd := strings.TrimSpace(parts[0])
 			countStr := strings.TrimSpace(parts[1])
 			if count, err := strconv.Atoi(countStr); err == nil && count > 0 {
-				// Transform multiple words
-				wordsTransformed := 0
-				for i := tp.tokenIdx - 1; i >= 0 && wordsTransformed < count; i-- {
+				// Find word indices to transform (in reverse order)
+				var wordIndices []int
+				for i := tp.tokenIdx - 1; i >= 0 && len(wordIndices) < count; i-- {
 					if tp.tokens[i].Type == WORD {
-						tp.tokens[i].Value = tp.transformWord(tp.tokens[i].Value, cmd)
-						wordsTransformed++
+						wordIndices = append(wordIndices, i)
 					}
+				}
+				// Transform words in forward order
+				for i := len(wordIndices) - 1; i >= 0; i-- {
+					idx := wordIndices[i]
+					tp.tokens[idx].Value = tp.transformWord(tp.tokens[idx].Value, cmd)
 				}
 			}
 		}
@@ -369,19 +373,53 @@ func fixArticles(text string) string {
 }
 
 func fixQuotes(text string) string {
-	// Simple approach: fix common quote patterns
-	result := text
-	result = strings.ReplaceAll(result, "' hello world '", "'hello world'")
-	result = strings.ReplaceAll(result, "' goodbye '", "'goodbye'")
-	result = strings.ReplaceAll(result, "' first quote '", "'first quote'")
-	result = strings.ReplaceAll(result, "' second quote '", "'second quote'")
-	result = strings.ReplaceAll(result, "' third quote '", "'third quote'")
-	result = strings.ReplaceAll(result, "' this Is Incredible! '", "'This Is incredible!'")
-	result = strings.ReplaceAll(result, "' this is incredible '", "'this is incredible'")
-	result = strings.ReplaceAll(result, "' I am", "'I am")
-	result = strings.ReplaceAll(result, "carries '", "carries'")
-	result = strings.ReplaceAll(result, "\" I am", "\"I am")
-	result = strings.ReplaceAll(result, "carries \"", "carries\"")
-	// Add more patterns as needed
-	return result
+	runes := []rune(text)
+	var result strings.Builder
+	
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		
+		if r == '\'' || r == '"' {
+			// Find matching quote
+			matchingQuote := -1
+			for j := i + 1; j < len(runes); j++ {
+				if runes[j] == r {
+					matchingQuote = j
+					break
+				}
+			}
+			
+			if matchingQuote != -1 {
+				// Found matching quote - process the quoted content
+				result.WriteRune(r) // Opening quote
+				
+				// Skip space after opening quote if present
+				startIdx := i + 1
+				if startIdx < len(runes) && runes[startIdx] == ' ' {
+					startIdx++
+				}
+				
+				// Find end of content (before closing quote)
+				endIdx := matchingQuote
+				if endIdx > 0 && runes[endIdx-1] == ' ' {
+					endIdx--
+				}
+				
+				// Write content between quotes
+				for k := startIdx; k < endIdx; k++ {
+					result.WriteRune(runes[k])
+				}
+				
+				result.WriteRune(r) // Closing quote
+				i = matchingQuote // Skip to after closing quote
+			} else {
+				// No matching quote found - treat as regular character
+				result.WriteRune(r)
+			}
+		} else {
+			result.WriteRune(r)
+		}
+	}
+	
+	return result.String()
 }
