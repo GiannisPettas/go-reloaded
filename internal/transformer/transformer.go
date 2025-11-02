@@ -1,7 +1,6 @@
 package transformer
 
 import (
-	"go-reloaded/internal/config"
 	"strconv"
 	"strings"
 )
@@ -295,95 +294,4 @@ func fixArticles(text string) string {
 		lines[lineIdx] = strings.Join(words, " ")
 	}
 	return strings.Join(lines, "\n")
-}
-
-// Legacy compatibility functions
-func TokenizeText(text string) []string {
-	return strings.Fields(ProcessText(text))
-}
-
-func ApplyAllTransformations(tokens []string) []string {
-	return strings.Fields(ProcessText(strings.Join(tokens, " ")))
-}
-
-func ApplyAllTransformationsWithContext(currentChunk, overlapContext string) []string {
-	mergedText := overlapContext
-	if overlapContext != "" && currentChunk != "" {
-		mergedText += " " + currentChunk
-	} else if currentChunk != "" {
-		mergedText = currentChunk
-	}
-	return strings.Fields(ProcessText(mergedText))
-}
-
-func TokensToString(tokens []string) string {
-	return strings.Join(tokens, " ")
-}
-
-// StreamProcessor maintains FSM state across chunks
-type StreamProcessor struct {
-	buffer    strings.Builder
-	processor *TokenProcessor
-	output    strings.Builder
-}
-
-func NewStreamProcessor() *StreamProcessor {
-	return &StreamProcessor{
-		processor: &TokenProcessor{},
-	}
-}
-
-func (sp *StreamProcessor) ProcessChunk(data []byte) string {
-	// Add chunk to buffer
-	sp.buffer.Write(data)
-	bufferText := sp.buffer.String()
-
-	// If buffer is getting large, process it in segments
-	if sp.buffer.Len() > config.CHUNK_BYTES*2 {
-		// Find last complete sentence or word boundary
-		lastBoundary := strings.LastIndexAny(bufferText, ".!?")
-		if lastBoundary == -1 {
-			lastBoundary = strings.LastIndex(bufferText, " ")
-		}
-
-		if lastBoundary > 0 {
-			completeText := bufferText[:lastBoundary+1]
-			remaining := bufferText[lastBoundary+1:]
-
-			// Reset buffer with remaining text
-			sp.buffer.Reset()
-			sp.buffer.WriteString(remaining)
-
-			// Process and accumulate output
-			processed := ProcessText(completeText)
-			sp.output.WriteString(processed)
-
-			// Return accumulated output
-			result := sp.output.String()
-			sp.output.Reset()
-			return result
-		}
-	}
-
-	return ""
-}
-
-func (sp *StreamProcessor) Flush() string {
-	// Process any remaining text in buffer
-	remaining := sp.buffer.String()
-	sp.buffer.Reset()
-
-	// Add any accumulated output
-	accumulated := sp.output.String()
-	sp.output.Reset()
-
-	if remaining != "" {
-		processed := ProcessText(remaining)
-		if accumulated != "" {
-			return accumulated + processed
-		}
-		return processed
-	}
-
-	return accumulated
 }
