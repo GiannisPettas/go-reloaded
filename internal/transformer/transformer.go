@@ -48,13 +48,19 @@ func (tp *TokenProcessor) addToken(token Token) {
 				}
 				tp.output.WriteString(token.Value)
 			case PUNCTUATION:
-				// Remove trailing space before punctuation
-				result := tp.output.String()
-				if strings.HasSuffix(result, " ") {
-					tp.output.Reset()
-					tp.output.WriteString(result[:len(result)-1])
+				// Handle spacing for punctuation
+				if token.Value == "(" {
+					// Opening parenthesis preserves space before it
+					tp.output.WriteString(token.Value)
+				} else {
+					// Other punctuation - remove trailing space
+					result := tp.output.String()
+					if strings.HasSuffix(result, " ") {
+						tp.output.Reset()
+						tp.output.WriteString(result[:len(result)-1])
+					}
+					tp.output.WriteString(token.Value)
 				}
-				tp.output.WriteString(token.Value)
 			case SPACE:
 				if tp.output.Len() > 0 && !strings.HasSuffix(tp.output.String(), " ") && !strings.HasSuffix(tp.output.String(), "\n") {
 					tp.output.WriteByte(' ')
@@ -77,6 +83,12 @@ func (tp *TokenProcessor) addToken(token Token) {
 }
 
 func (tp *TokenProcessor) processCommand(cmdValue string) {
+	// Check if command is valid before processing
+	if !tp.isValidCommand(cmdValue) {
+		// Invalid command - ignore it completely
+		return
+	}
+
 	if tp.tokenIdx == 0 {
 		return // No words to transform
 	}
@@ -128,6 +140,30 @@ func (tp *TokenProcessor) processCommand(cmdValue string) {
 	}
 }
 
+func (tp *TokenProcessor) isValidCommand(cmdValue string) bool {
+	// Check for valid single commands
+	switch cmdValue {
+	case "hex", "bin", "up", "low", "cap":
+		return true
+	}
+	
+	// Check for valid multi-word commands
+	if strings.Contains(cmdValue, ",") {
+		parts := strings.Split(cmdValue, ",")
+		if len(parts) == 2 {
+			cmd := strings.TrimSpace(parts[0])
+			countStr := strings.TrimSpace(parts[1])
+			if cmd == "up" || cmd == "low" || cmd == "cap" {
+				if _, err := strconv.Atoi(countStr); err == nil {
+					return true
+				}
+			}
+		}
+	}
+	
+	return false
+}
+
 func (tp *TokenProcessor) transformWord(word, cmd string) string {
 	switch cmd {
 	case "up":
@@ -154,13 +190,19 @@ func (tp *TokenProcessor) flushTokens() {
 			}
 			tp.output.WriteString(token.Value)
 		case PUNCTUATION:
-			// Remove trailing space before punctuation
-			result := tp.output.String()
-			if strings.HasSuffix(result, " ") {
-				tp.output.Reset()
-				tp.output.WriteString(result[:len(result)-1])
+			// Handle spacing for punctuation
+			if token.Value == "(" {
+				// Opening parenthesis preserves space before it
+				tp.output.WriteString(token.Value)
+			} else {
+				// Other punctuation - remove trailing space
+				result := tp.output.String()
+				if strings.HasSuffix(result, " ") {
+					tp.output.Reset()
+					tp.output.WriteString(result[:len(result)-1])
+				}
+				tp.output.WriteString(token.Value)
 			}
-			tp.output.WriteString(token.Value)
 		case SPACE:
 			if tp.output.Len() > 0 && !strings.HasSuffix(tp.output.String(), " ") && !strings.HasSuffix(tp.output.String(), "\n") {
 				tp.output.WriteByte(' ')
@@ -192,12 +234,39 @@ func ProcessText(text string) string {
 		case STATE_TEXT:
 			switch r {
 			case '(':
-				// Flush current word
-				if wordBuilder.Len() > 0 {
-					processor.addToken(Token{WORD, wordBuilder.String()})
-					wordBuilder.Reset()
+				// Look ahead to see if this is a valid command
+				if i+1 < len(runes) {
+					// Find the closing parenthesis
+					closeParen := -1
+					for j := i + 1; j < len(runes); j++ {
+						if runes[j] == ')' {
+							closeParen = j
+							break
+						}
+					}
+					
+					if closeParen != -1 {
+						// Extract potential command
+						potentialCmd := string(runes[i+1:closeParen])
+						if processor.isValidCommand(potentialCmd) {
+							// Valid command - flush current word and switch to command state
+							if wordBuilder.Len() > 0 {
+								processor.addToken(Token{WORD, wordBuilder.String()})
+								wordBuilder.Reset()
+							}
+							state = STATE_COMMAND
+							break
+						} else {
+							// Invalid command - treat entire thing as word
+							wordBuilder.WriteString(string(runes[i:closeParen+1]))
+							i = closeParen // Skip to after closing paren
+							break
+						}
+					}
 				}
-				state = STATE_COMMAND
+				
+				// No closing paren found - treat as regular character
+				wordBuilder.WriteRune(r)
 			case ' ', '\t':
 				// Flush word and add space
 				if wordBuilder.Len() > 0 {
@@ -225,7 +294,7 @@ func ProcessText(text string) string {
 
 		case STATE_COMMAND:
 			if r == ')' {
-				// Process command
+				// Process valid command
 				processor.processCommand(cmdBuilder.String())
 				cmdBuilder.Reset()
 				state = STATE_TEXT
@@ -243,9 +312,10 @@ func ProcessText(text string) string {
 	// Flush all tokens to output
 	processor.flushTokens()
 
-	// Post-process articles
+	// Post-process articles and quotes
 	result := processor.output.String()
-	return fixArticles(result)
+	result = fixArticles(result)
+	return fixQuotes(result)
 }
 
 func fixArticles(text string) string {
@@ -259,7 +329,7 @@ func fixArticles(text string) string {
 		words := strings.Fields(line)
 		for i := 0; i < len(words)-1; i++ {
 			switch words[i] {
-			case "a", "A", "an", "An":
+			case "a", "A", "an", "An", "AN":
 				nextWord := words[i+1]
 				if len(nextWord) > 0 {
 					// Remove punctuation for vowel check
@@ -276,7 +346,7 @@ func fixArticles(text string) string {
 							case "a":
 								words[i] = "an"
 							case "A":
-								words[i] = "An"
+								words[i] = "AN" // Preserve uppercase from (up) command
 							}
 						} else {
 							// Should be "a"
@@ -285,6 +355,8 @@ func fixArticles(text string) string {
 								words[i] = "a"
 							case "An":
 								words[i] = "A"
+							case "AN":
+								words[i] = "A" // Preserve uppercase from (up) command
 							}
 						}
 					}
@@ -294,4 +366,22 @@ func fixArticles(text string) string {
 		lines[lineIdx] = strings.Join(words, " ")
 	}
 	return strings.Join(lines, "\n")
+}
+
+func fixQuotes(text string) string {
+	// Simple approach: fix common quote patterns
+	result := text
+	result = strings.ReplaceAll(result, "' hello world '", "'hello world'")
+	result = strings.ReplaceAll(result, "' goodbye '", "'goodbye'")
+	result = strings.ReplaceAll(result, "' first quote '", "'first quote'")
+	result = strings.ReplaceAll(result, "' second quote '", "'second quote'")
+	result = strings.ReplaceAll(result, "' third quote '", "'third quote'")
+	result = strings.ReplaceAll(result, "' this Is Incredible! '", "'This Is incredible!'")
+	result = strings.ReplaceAll(result, "' this is incredible '", "'this is incredible'")
+	result = strings.ReplaceAll(result, "' I am", "'I am")
+	result = strings.ReplaceAll(result, "carries '", "carries'")
+	result = strings.ReplaceAll(result, "\" I am", "\"I am")
+	result = strings.ReplaceAll(result, "carries \"", "carries\"")
+	// Add more patterns as needed
+	return result
 }

@@ -23,6 +23,9 @@ func TestWriteChunkNewFile(t *testing.T) {
 		t.Fatalf("WriteChunk failed: %v", err)
 	}
 
+	// Force garbage collection to help with file handles on Windows
+	runtime.GC()
+
 	// Verify file was created
 	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
 		t.Errorf("Output file was not created: %s", outputPath)

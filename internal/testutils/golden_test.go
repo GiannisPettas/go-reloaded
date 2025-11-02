@@ -7,6 +7,9 @@ import (
 )
 
 func TestGoldenCases(t *testing.T) {
+	// Force no cache for golden tests - they are core to the program
+	t.Setenv("GOCACHE", "off")
+	
 	tests, err := ParseGoldenTests("../../docs/golden_tests.md")
 	if err != nil {
 		t.Fatalf("Failed to parse golden tests: %v", err)

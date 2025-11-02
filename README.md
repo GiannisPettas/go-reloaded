@@ -148,23 +148,52 @@ Convert 255 to decimal and make it UP.
 ## Testing
 
 ### Run All Tests (Recommended)
-```bash
-cd internal/testutils && go test -v -run TestAllProject
+
+**Windows:**
+```cmd
+call run_all_tests.bat
 ```
-This single command runs all tests including the 27 golden test cases with nice formatting.
+
+**Linux/macOS:**
+```bash
+chmod +x run_all_tests.sh
+./run_all_tests.sh
+```
+
+**Manual (all platforms):**
+```bash
+cd internal/testutils && go test -count=1 -v -run TestAllProject
+```
+
+### Run Golden Tests Only
+
+**Windows:**
+```cmd
+call run_golden_tests.bat
+```
+
+**Linux/macOS:**
+```bash
+chmod +x run_golden_tests.sh
+./run_golden_tests.sh
+```
+
+**Manual (all platforms):**
+```bash
+cd internal/testutils && go test -count=1 -v -run TestGoldenCases
+```
 
 ### Alternative Test Commands
 ```bash
 # Run all tests manually
 go test -count=1 ./...
 
-# Run golden test suite only
-cd internal/testutils && go test -v -run TestGoldenCases
-
 # Run specific package tests
 go test ./internal/transformer/
 go test ./internal/config/
 ```
+
+**Important:** Golden tests always run without cache (`-count=1` flag) to ensure accurate feedback. This is critical for program reliability.
 
 The project includes 27 comprehensive test cases covering all transformation scenarios.
 

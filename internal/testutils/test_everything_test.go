@@ -34,7 +34,7 @@ func TestAllProject(t *testing.T) {
 		t.Fatalf("Main tests failed: %v", err)
 	}
 
-	// Run golden tests separately
+	// Run golden tests separately with no cache (core to program)
 	fmt.Println("\n🏆 Running Golden Test Suite...")
 	cmdGolden := exec.Command("go", "test", "-count=1", "-v", "-run=TestGoldenCases")
 	cmdGolden.Dir = filepath.Join(projectRoot, "internal", "testutils")

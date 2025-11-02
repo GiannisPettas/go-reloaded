@@ -16,10 +16,75 @@ It handles commands in parentheses and fixes grammar automatically.
 
 ## Core Concepts
 
-### 1. Finite State Machine (FSM)
-Think of FSM like a traffic light - it can only be in one state at a time:
+### 1. Dual Finite State Machine (FSM) Architecture
+
+Go-Reloaded uses **two FSMs working together** for maximum efficiency:
+
+#### **Low-Level FSM (Character Parser)**
 - **STATE_TEXT**: Reading normal text
 - **STATE_COMMAND**: Reading commands inside parentheses `(like this)`
+- Handles **syntax**: What does each character mean?
+- Manages **state transitions**: When to switch between TEXT/COMMAND
+- Deals with **Unicode safety**: Converting bytes to runes properly
+
+#### **High-Level FSM (Token Processor)**
+- Handles **semantics**: What do complete tokens mean?
+- Manages **transformations**: How to modify words
+- Deals with **memory management**: Buffer overflow, token storage
+
+#### **Why Split Into Two FSMs?**
+
+**Not just for clarity - there are real technical benefits:**
+
+**1. Separation of Concerns**
+- Low-level handles character parsing
+- High-level handles token processing
+- Clean, maintainable code
+
+**2. Memory Efficiency**
+```go
+// Without split - grows with file size
+type SingleFSM struct {
+    allTokens []Token     // Memory grows!
+    allCommands []Command // More memory!
+}
+
+// With split - constant memory
+type TokenProcessor struct {
+    tokens [50]Token  // Fixed size, ~8KB always
+}
+```
+
+**3. Extensibility**
+- Easy to add new character types (low-level)
+- Easy to add new commands (high-level)
+- Independent development
+
+**4. Performance Optimization**
+- Low-level: Fast character classification
+- High-level: Smart token buffering
+- Each optimized for its purpose
+
+**5. Testing**
+- Test character parsing separately
+- Test token processing separately
+- Easier debugging
+
+#### **How They Work Together**
+```go
+for each character {
+    // LOW-LEVEL FSM decides what character means
+    switch state {
+    case STATE_TEXT:
+        if r == ' ' {
+            // HIGH-LEVEL FSM processes immediately
+            processor.addToken(Token{WORD, wordBuilder.String()})
+        }
+    }
+}
+```
+
+**No waiting - it's event-driven!** The low-level FSM **triggers** the high-level FSM when something is ready to process.
 
 ### 2. Tokens
 Everything gets broken into tokens (pieces):
@@ -62,9 +127,63 @@ result := builder.String()  // Only creates final string once
 
 This is why Go-Reloaded can process large files efficiently!
 
+## Function Execution Order
+
+**The first function that runs in the transformer is:**
+
+### **`ProcessText(text string) string`** - Main Entry Point
+
+This is the **main entry point** - it's the function that gets called from the controller.
+
+**Execution Flow:**
+```go
+1. ProcessText()           // ← STARTS HERE (main entry point)
+   ↓
+2. Creates TokenProcessor  // processor := &TokenProcessor{}
+   ↓
+3. Character-by-character loop begins
+   ↓
+4. addToken()             // Called for each token found
+   ↓
+5. processCommand()       // Called when ')' is found
+   ↓
+6. transformWord()        // Called from processCommand()
+   ↓
+7. flushTokens()          // Called at the end
+   ↓
+8. fixArticles()          // Final post-processing
+   ↓
+9. Returns final string   // Back to controller
+```
+
+**How It Gets Called:**
+From the controller:
+```go
+// controller.go calls transformer
+result := transformer.ProcessText(text)  // ← This is where it starts
+```
+
+**What ProcessText Does First:**
+```go
+func ProcessText(text string) string {
+    if text == "" {           // 1. Check for empty input
+        return ""
+    }
+    
+    runes := []rune(text)     // 2. Convert to runes (Unicode safe)
+    processor := &TokenProcessor{}  // 3. Create token processor
+    
+    state := STATE_TEXT       // 4. Initialize FSM state
+    var wordBuilder strings.Builder  // 5. Create string builders
+    var cmdBuilder strings.Builder
+    
+    // 6. Start the main character loop...
+}
+```
+
 ## Step-by-Step Process
 
-### Step 1: Main Entry Point - `ProcessText()`
+### Step 1: ProcessText() Details
 
 ```go
 func ProcessText(text string) string

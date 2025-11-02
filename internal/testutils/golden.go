@@ -52,21 +52,22 @@ func ParseGoldenTests(filePath string) ([]GoldenTest, error) {
 		}
 		
 		// Parse input section
-		if line == "**Input:**" {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine == "**Input:**" {
 			inInput = true
 			inExpected = false
 			continue
 		}
 		
 		// Parse expected output section
-		if line == "**Expected Output:**" {
+		if trimmedLine == "**Expected Output:**" {
 			inInput = false
 			inExpected = true
 			continue
 		}
 		
 		// Stop parsing when hitting next section
-		if strings.HasPrefix(line, "**") && line != "**Input:**" && line != "**Expected Output:**" {
+		if strings.HasPrefix(trimmedLine, "**") && trimmedLine != "**Input:**" && trimmedLine != "**Expected Output:**" {
 			inInput = false
 			inExpected = false
 		}
