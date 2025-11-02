@@ -4,8 +4,6 @@ import (
 	"testing"
 )
 
-// Purpose: Tests constants during development/CI
-
 func TestProcessTextBasic(t *testing.T) {
 	text := "hello world"
 	result := ProcessText(text)
