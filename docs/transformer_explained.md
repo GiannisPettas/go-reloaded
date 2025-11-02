@@ -115,7 +115,6 @@ if r == ')' {
 **Example walkthrough:**
 ```
 Input: "Hello (up) world!"
-
 Character 'H': STATE_TEXT, default -> add to wordBuilder: "H"
 Character 'e': STATE_TEXT, default -> add to wordBuilder: "He"
 Character 'l': STATE_TEXT, default -> add to wordBuilder: "Hel"
