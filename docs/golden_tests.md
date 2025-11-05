@@ -322,7 +322,19 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 Tests complex scenarios combining quote repositioning, article correction, case transformations, and punctuation spacing in a single sentence.
 
 **Input:**  
-harold wilson (cap, 2) a ' I am a (cap) optimist ,but a (up) optimist who carries ' a raincoat .
+harold wilson (cap, 2) a ' I am a (up) optimist ,but a (up) optimist who carries ' a raincoat .
 
 **Expected Output:**  
 Harold Wilson a 'I am AN optimist, but AN optimist who carries' a raincoat.
+
+
+## T29 — Article Correction with Case Commands
+
+**Description:**  
+Tests article correction (a → an) combined with case transformation commands to ensure proper interaction.
+
+**Input:**  
+it is a eagle (cap, 2) was the best of times, it was the worst of times (up) .
+
+**Expected Output:**  
+it is An Eagle was the best of times, it was the worst of TIMES.

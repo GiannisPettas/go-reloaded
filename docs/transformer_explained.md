@@ -574,6 +574,94 @@ Even with 3 passes, memory usage remains **constant ~8KB** because:
 
 **Result**: Effectively single-pass for core transformations, with minimal post-processing cleanup.
 
+## Extensibility and Future Enhancements
+
+### Why the Separated Architecture is Perfect for Custom Commands
+
+The current design with **FSM + separate post-processing functions** creates an ideal foundation for adding custom user commands:
+
+```go
+// Current architecture
+result := fsm.ProcessText(text)     // Core transformations
+result = fixArticles(result)        // Grammar fixes
+result = fixQuotes(result)          // Formatting fixes
+// Easy to add more post-processors!
+```
+
+### Adding Custom Commands - Future Design
+
+**1. FSM Extension (for real-time commands)**
+```go
+// Add to isValidCommand()
+case "custom1", "custom2", "userdef":
+    return true
+
+// Add to processCommand()
+case "custom1":
+    // Custom transformation logic
+```
+
+**2. Post-Processing Extension (for complex rules)**
+```go
+// Easy to add new post-processors
+result := fsm.ProcessText(text)
+result = fixArticles(result)
+result = fixQuotes(result)
+result = fixCustomGrammar(result)    // New!
+result = fixUserDefinedRules(result) // New!
+return result
+```
+
+### Benefits of This Architecture
+
+**1. Clean Separation**
+- **FSM**: Fast, real-time word transformations
+- **Post-processing**: Complex pattern matching and grammar rules
+- **No interference** between different types of transformations
+
+**2. Performance Optimization**
+- Simple commands stay in fast FSM
+- Complex rules use dedicated algorithms
+- Memory usage remains constant
+
+**3. Easy Testing**
+- Test FSM commands independently
+- Test post-processing rules independently
+- Add new tests without affecting existing ones
+
+**4. Maintainability**
+- Each function has single responsibility
+- Easy to debug specific transformation types
+- Clear code organization
+
+### Example: Adding Custom Commands
+
+**Scenario**: User wants to add `(reverse)` command and custom punctuation rules.
+
+```go
+// 1. Add to FSM (simple word transformation)
+case "reverse":
+    reversed := ""
+    for _, r := range tp.tokens[lastWordIdx].Value {
+        reversed = string(r) + reversed
+    }
+    tp.tokens[lastWordIdx].Value = reversed
+
+// 2. Add post-processor (complex pattern matching)
+func fixCustomPunctuation(text string) string {
+    // Complex regex-based punctuation rules
+    // User-defined formatting preferences
+    return processedText
+}
+
+// 3. Update pipeline
+result = fixArticles(result)
+result = fixQuotes(result)
+result = fixCustomPunctuation(result)  // New!
+```
+
+**This design makes Go-Reloaded infinitely extensible while maintaining performance and code clarity.**
+
 ## Implementation Standards
 
 ### General Algorithmic Approach

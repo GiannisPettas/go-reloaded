@@ -39,4 +39,4 @@ Include relevant details in error messages:
 - NEVER use hardcoded patterns specific to golden test cases
 - Implement general algorithmic solutions that work for any input
 - Functions must handle arbitrary text, not just test-specific strings
-- Use pattern matching, regex, or algorithmic approaches instead of literal string replacements
+- Use algorithmic approaches instead of literal string replacements

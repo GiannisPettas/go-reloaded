@@ -30,6 +30,7 @@ type TokenProcessor struct {
 	tokens   [50]Token
 	tokenIdx int
 	output   strings.Builder
+	upperArticles map[int]bool // Track positions of articles uppercased by (up) commands
 }
 
 func (tp *TokenProcessor) addToken(token Token) {
@@ -123,7 +124,12 @@ func (tp *TokenProcessor) processCommand(cmdValue string) {
 				// Transform words in forward order
 				for i := len(wordIndices) - 1; i >= 0; i-- {
 					idx := wordIndices[i]
-					tp.tokens[idx].Value = tp.transformWord(tp.tokens[idx].Value, cmd)
+					// Mark articles transformed by (up) command
+					if cmd == "up" && (tp.tokens[idx].Value == "a" || tp.tokens[idx].Value == "an") {
+						tp.tokens[idx].Value = "UP_" + tp.transformWord(tp.tokens[idx].Value, cmd)
+					} else {
+						tp.tokens[idx].Value = tp.transformWord(tp.tokens[idx].Value, cmd)
+					}
 				}
 			}
 		}
@@ -139,7 +145,12 @@ func (tp *TokenProcessor) processCommand(cmdValue string) {
 				tp.tokens[lastWordIdx].Value = strconv.FormatInt(val, 10)
 			}
 		default:
-			tp.tokens[lastWordIdx].Value = tp.transformWord(tp.tokens[lastWordIdx].Value, cmdValue)
+			// Mark articles transformed by (up) command
+			if cmdValue == "up" && (tp.tokens[lastWordIdx].Value == "a" || tp.tokens[lastWordIdx].Value == "an") {
+				tp.tokens[lastWordIdx].Value = "UP_" + tp.transformWord(tp.tokens[lastWordIdx].Value, cmdValue)
+			} else {
+				tp.tokens[lastWordIdx].Value = tp.transformWord(tp.tokens[lastWordIdx].Value, cmdValue)
+			}
 		}
 	}
 }
@@ -225,7 +236,9 @@ func ProcessText(text string) string {
 	}
 
 	runes := []rune(text)
-	processor := &TokenProcessor{}
+	processor := &TokenProcessor{
+		upperArticles: make(map[int]bool),
+	}
 
 	state := STATE_TEXT
 	var wordBuilder strings.Builder
@@ -333,7 +346,7 @@ func fixArticles(text string) string {
 		words := strings.Fields(line)
 		for i := 0; i < len(words)-1; i++ {
 			switch words[i] {
-			case "a", "A", "an", "An", "AN":
+			case "a", "A", "an", "An", "AN", "UP_A", "UP_AN":
 				nextWord := words[i+1]
 				if len(nextWord) > 0 {
 					// Remove punctuation for vowel check
@@ -350,7 +363,11 @@ func fixArticles(text string) string {
 							case "a":
 								words[i] = "an"
 							case "A":
-								words[i] = "AN" // Preserve uppercase from (up) command
+								words[i] = "An" // From (cap) command
+							case "UP_A":
+								words[i] = "AN" // From (up) command
+							case "AN":
+								words[i] = "AN" // Already fully uppercase
 							}
 						} else {
 							// Should be "a"
@@ -359,6 +376,8 @@ func fixArticles(text string) string {
 								words[i] = "a"
 							case "An":
 								words[i] = "A"
+							case "UP_A":
+								words[i] = "A" // From (up) command
 							case "AN":
 								words[i] = "A" // Preserve uppercase from (up) command
 							}
