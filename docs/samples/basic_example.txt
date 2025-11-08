@@ -1,5 +1,0 @@
-Simply add 1010 (bin) (hex) , and check the total !
-
-I need a apple and an car for the trip.
-
-Convert FF (hex) to decimal and make it (up) .
