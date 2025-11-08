@@ -49,6 +49,51 @@ return processChunkedFile(inputPath, outputPath)
 - Small files: Maximum performance, no overhead
 - Large files: Constant memory usage, no size limits
 
+### Why Two Separate Functions?
+
+**The functions handle completely different complexity levels:**
+
+**`processSingleChunk` (Simple):**
+```go
+// Simple: Read → Transform → Write
+data := parser.ReadChunk(inputPath, 0)
+result := transformer.ProcessText(string(data))
+exporter.WriteChunk(outputPath, result)
+```
+
+**`processChunkedFile` (Complex):**
+```go
+// Complex: Loop with overlap management
+for {
+    data := parser.ReadChunk(inputPath, offset)
+    
+    // Merge with previous overlap
+    textToProcess = overlapContext + " " + chunkText
+    
+    // Process and handle overlap removal
+    processedChunk := transformer.ProcessText(textToProcess)
+    
+    // Extract overlap for next iteration
+    newOverlap, remaining := parser.ExtractOverlapWords(processedChunk)
+    
+    // Write/append logic, update offset, check boundaries, etc.
+}
+```
+
+**Key differences:**
+- **Overlap handling**: Large files need word context between chunks
+- **Write strategy**: Single write vs append operations  
+- **Loop complexity**: Simple call vs complex iteration with state management
+- **Memory management**: Different patterns for small vs large files
+
+**Benefits of separation:**
+- **Performance**: Small files avoid unnecessary overhead
+- **Simplicity**: Easy debugging for common case (most files are small)
+- **Maintainability**: Clear separation of concerns
+- **Code clarity**: Each function has a single, focused purpose
+
+You could combine them, but it would make the code more complex for the simple case.
+
 ## Single Chunk Processing - `processSingleChunk()`
 
 **For files ≤ CHUNK_BYTES - Simple and fast:**
@@ -326,7 +371,7 @@ if fileInfo.Size() <= int64(config.CHUNK_BYTES) {
 **Controller only orchestrates** - it doesn't:
 - Parse file content (parser's job)
 - Transform text (transformer's job)  
-- Handle file I/O details (exporter's job)
+- Handle file I/O details (exporter's job)rter's job)
 
 ### Dependency Injection
 **Controller receives all dependencies explicitly:**

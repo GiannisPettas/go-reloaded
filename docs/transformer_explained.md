@@ -91,12 +91,80 @@ for each character {
 
 **No waiting - it's event-driven!** The low-level FSM **triggers** the high-level FSM when something is ready to process.
 
-### 2. Tokens
-Everything gets broken into tokens (pieces):
+### 2. Token Structure - Why We Need It
+
+**Token Definition:**
+```go
+type Token struct {
+    Type  int    // What kind of element (WORD, PUNCTUATION, SPACE, NEWLINE)
+    Value string // The actual text content
+}
+```
+
+**Token Types:**
 - **WORD**: "hello", "world", "FF"
 - **PUNCTUATION**: ".", "!", "?"
 - **SPACE**: " " (spaces and tabs)
 - **NEWLINE**: "\n" (line breaks)
+- **COMMAND**: Commands are processed immediately, not stored as tokens
+
+#### Why We Need Structured Tokens
+
+**1. Command Processing**
+Commands like `(up, 3)` need to find and transform **specific previous words**:
+
+```go
+// Without tokens: Hard to find "these three words"
+"these three words should be (up, 3)"
+
+// With tokens: Easy to locate by type
+[{WORD, "these"}, {SPACE, " "}, {WORD, "three"}, {WORD, "words"}, ...]
+```
+
+**2. Punctuation Spacing**
+Different punctuation needs different spacing rules:
+
+```go
+// Token types allow specific handling
+{PUNCTUATION, "("} → Keep space before
+{PUNCTUATION, "!"} → Remove space before
+{PUNCTUATION, "."} → Remove space before
+```
+
+**3. Buffered Processing**
+The transformer uses a **fixed-size token buffer** (50 tokens) for constant memory:
+
+```go
+tokens [50]Token  // Fixed buffer, no growing slices
+```
+
+**4. Context Preservation**
+Commands can reference words that appeared earlier:
+
+```go
+"word1 word2 word3 (up, 2)" 
+// Need to find "word2 word3" - tokens make this easy
+```
+
+#### Without Tokens (Problems)
+
+```go
+// String processing - hard to track word positions
+text := "hello world (up, 1)"
+// How do you find "world" efficiently?
+// How do you handle punctuation spacing?
+// How do you maintain fixed memory usage?
+```
+
+#### With Tokens (Clean)
+
+```go
+// Structured processing - easy to navigate
+tokens := [{WORD, "hello"}, {SPACE, " "}, {WORD, "world"}]
+// Easy to find last word, apply transformations, handle spacing
+```
+
+**Tokens provide the structure needed for complex text transformations while maintaining constant memory usage.**
 
 ### 3. strings.Builder
 `strings.Builder` is a Go standard library type for **efficient string concatenation**.
@@ -264,6 +332,7 @@ type TokenProcessor struct {
     tokens   [50]Token  // Fixed-size buffer
     tokenIdx int        // Current position
     output   strings.Builder // Final output
+    upperArticles map[int]bool // Track articles uppercased by (up) commands
 }
 ```
 
@@ -272,6 +341,34 @@ type TokenProcessor struct {
 - If buffer is full: flush first half to output, shift remaining tokens, then add new token
 
 **Why fixed buffer?** Memory efficiency! No matter how big the file, we only use ~8KB of memory.
+
+#### Token Buffer Management
+
+**Buffer Overflow Handling:**
+```go
+if tp.tokenIdx >= len(tp.tokens) {
+    // Buffer is full, flush first half to output
+    halfSize := len(tp.tokens) / 2
+    for i := 0; i < halfSize; i++ {
+        // Process token and add to output
+    }
+    
+    // Shift remaining tokens to beginning
+    for i := 0; i < halfSize; i++ {
+        tp.tokens[i] = tp.tokens[halfSize+i]
+    }
+    tp.tokenIdx = halfSize
+    
+    // Add new token
+    tp.tokens[tp.tokenIdx] = token
+    tp.tokenIdx++
+}
+```
+
+**This ensures:**
+- Constant memory usage (~8KB)
+- No data loss during processing
+- Continuous streaming for large files
 
 ### Step 4: Command Validation and Processing
 
