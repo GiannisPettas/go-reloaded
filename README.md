@@ -82,11 +82,14 @@ Output: "These Two words should be capitalized"
 
 ### Article Corrections
 ```
-Input:  "I need a apple and an car"
-Output: "I need an apple and a car"
+Input:  "I saw a elephant and a unicorn at an zoo"
+Output: "I saw an elephant and a unicorn at a zoo"
 
-Input:  "It was a honor to meet an European"
-Output: "It was an honor to meet a European"
+Input:  "She is a honest person and an university student"
+Output: "She is an honest person and a university student"
+
+Input:  "He bought a umbrella from an store"
+Output: "He bought an umbrella from a store"
 ```
 
 ### Punctuation Spacing

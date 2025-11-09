@@ -579,53 +579,58 @@ func fixArticles(text string) string {
 - `an car` → `a car`
 - `A (up) apple` → `AN apple` (preserves uppercase from command)
 
-#### Quote Repositioning - `fixQuotes()` - **General Algorithm**
+#### Quote Repositioning - `fixQuotes()` - **Independent Odd/Even Algorithm**
 
-**Removes spaces between quotes and their content using algorithmic approach:**
+**Handles mixed quote types independently using odd/even positioning logic:**
 
 ```go
 func fixQuotes(text string) string {
     runes := []rune(text)
     var result strings.Builder
     
+    singleQuoteCount := 0
+    doubleQuoteCount := 0
+    
     for i := 0; i < len(runes); i++ {
         r := runes[i]
         
-        if r == '\'' || r == '"' {
-            // Find matching quote
-            matchingQuote := -1
-            for j := i + 1; j < len(runes); j++ {
-                if runes[j] == r {
-                    matchingQuote = j
-                    break
+        if r == '\'' {
+            singleQuoteCount++
+            if singleQuoteCount%2 == 1 {
+                // Odd quote - stick to right letter
+                result.WriteRune(r)
+                // Skip space after quote if present
+                if i+1 < len(runes) && runes[i+1] == ' ' {
+                    i++ // Skip the space
                 }
-            }
-            
-            if matchingQuote != -1 {
-                // Process quote pair
-                result.WriteRune(r) // Opening quote
-                
-                // Skip space after opening quote
-                startIdx := i + 1
-                if startIdx < len(runes) && runes[startIdx] == ' ' {
-                    startIdx++
-                }
-                
-                // Find content end (before closing quote)
-                endIdx := matchingQuote
-                if endIdx > 0 && runes[endIdx-1] == ' ' {
-                    endIdx--
-                }
-                
-                // Write content without internal spaces
-                for k := startIdx; k < endIdx; k++ {
-                    result.WriteRune(runes[k])
-                }
-                
-                result.WriteRune(r) // Closing quote
-                i = matchingQuote // Skip to after closing quote
             } else {
-                result.WriteRune(r) // No matching quote
+                // Even quote - stick to left letter
+                // Remove space before quote if present
+                resultStr := result.String()
+                if strings.HasSuffix(resultStr, " ") {
+                    result.Reset()
+                    result.WriteString(resultStr[:len(resultStr)-1])
+                }
+                result.WriteRune(r)
+            }
+        } else if r == '"' {
+            doubleQuoteCount++
+            if doubleQuoteCount%2 == 1 {
+                // Odd quote - stick to right letter
+                result.WriteRune(r)
+                // Skip space after quote if present
+                if i+1 < len(runes) && runes[i+1] == ' ' {
+                    i++ // Skip the space
+                }
+            } else {
+                // Even quote - stick to left letter
+                // Remove space before quote if present
+                resultStr := result.String()
+                if strings.HasSuffix(resultStr, " ") {
+                    result.Reset()
+                    result.WriteString(resultStr[:len(resultStr)-1])
+                }
+                result.WriteRune(r)
             }
         } else {
             result.WriteRune(r)
@@ -636,13 +641,42 @@ func fixQuotes(text string) string {
 }
 ```
 
+**Algorithm Logic:**
+- **Single quotes (`'`)**: Tracked independently with separate counter
+- **Double quotes (`"`)**: Tracked independently with separate counter
+- **Odd-numbered quotes**: Stick to the right (remove space after)
+- **Even-numbered quotes**: Stick to the left (remove space before)
+- **No mixing**: Each quote type processed completely independently
+
 **Examples:**
+
+**Simple cases (same quote type):**
 - `' hello world '` → `'hello world'`
 - `" any text "` → `"any text"`
-- `' I am` → `'I am` (opening quote only)
-- `carries '` → `carries'` (closing quote only)
 
-**Key Feature**: This is a **general algorithmic solution** that works for ANY text content between quotes, not hardcoded patterns.
+**Mixed quote types (the key improvement):**
+- `" hello ' world ' text "` → `"hello 'world' text"`
+- `' outer " inner " text '` → `'outer "inner" text'`
+
+**Complex mixed example:**
+```
+Input:  `" a' b f ' c " d " "`
+Output: `"a'b f' c" d ""`
+
+Breakdown:
+1st " (odd) → stick to 'a': "a
+1st ' (odd) → stick to 'b': 'b  
+2nd ' (even) → stick to 'f': f'
+2nd " (even) → stick to 'c': c"
+3rd " (odd) → stick to 4th ": "
+4th " (even) → already has 3rd attached: "
+```
+
+**Key Features:**
+- **Independent processing**: Single and double quotes don't interfere
+- **General algorithm**: Works for ANY content and quote arrangement
+- **No hardcoded patterns**: Handles arbitrary text between quotes
+- **Robust**: Handles unmatched quotes gracefully
 
 ## Single-Pass Architecture
 

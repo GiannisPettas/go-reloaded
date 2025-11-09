@@ -395,44 +395,48 @@ func fixQuotes(text string) string {
 	runes := []rune(text)
 	var result strings.Builder
 	
+	singleQuoteCount := 0
+	doubleQuoteCount := 0
+	
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
 		
-		if r == '\'' || r == '"' {
-			// Find matching quote
-			matchingQuote := -1
-			for j := i + 1; j < len(runes); j++ {
-				if runes[j] == r {
-					matchingQuote = j
-					break
+		if r == '\'' {
+			singleQuoteCount++
+			if singleQuoteCount%2 == 1 {
+				// Odd quote - stick to right letter
+				result.WriteRune(r)
+				// Skip space after quote if present
+				if i+1 < len(runes) && runes[i+1] == ' ' {
+					i++ // Skip the space
 				}
-			}
-			
-			if matchingQuote != -1 {
-				// Found matching quote - process the quoted content
-				result.WriteRune(r) // Opening quote
-				
-				// Skip space after opening quote if present
-				startIdx := i + 1
-				if startIdx < len(runes) && runes[startIdx] == ' ' {
-					startIdx++
-				}
-				
-				// Find end of content (before closing quote)
-				endIdx := matchingQuote
-				if endIdx > 0 && runes[endIdx-1] == ' ' {
-					endIdx--
-				}
-				
-				// Write content between quotes
-				for k := startIdx; k < endIdx; k++ {
-					result.WriteRune(runes[k])
-				}
-				
-				result.WriteRune(r) // Closing quote
-				i = matchingQuote // Skip to after closing quote
 			} else {
-				// No matching quote found - treat as regular character
+				// Even quote - stick to left letter
+				// Remove space before quote if present
+				resultStr := result.String()
+				if strings.HasSuffix(resultStr, " ") {
+					result.Reset()
+					result.WriteString(resultStr[:len(resultStr)-1])
+				}
+				result.WriteRune(r)
+			}
+		} else if r == '"' {
+			doubleQuoteCount++
+			if doubleQuoteCount%2 == 1 {
+				// Odd quote - stick to right letter
+				result.WriteRune(r)
+				// Skip space after quote if present
+				if i+1 < len(runes) && runes[i+1] == ' ' {
+					i++ // Skip the space
+				}
+			} else {
+				// Even quote - stick to left letter
+				// Remove space before quote if present
+				resultStr := result.String()
+				if strings.HasSuffix(resultStr, " ") {
+					result.Reset()
+					result.WriteString(resultStr[:len(resultStr)-1])
+				}
 				result.WriteRune(r)
 			}
 		} else {
