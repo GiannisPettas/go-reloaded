@@ -2,20 +2,24 @@
 
 A high-performance text processing tool that transforms text files using various commands. Built with a dual finite state machine architecture for maximum efficiency and minimal memory usage.
 
+🌐 **[Try the Interactive Demo](https://giannispettas.github.io/go-reloaded/)** | 📖 **[Documentation](docs/)**
+
 ## Features
 
-- **Numeric Base Conversion**: Convert hexadecimal and binary numbers to decimal
+- **Numeric Base Conversion**: Convert hexadecimal and binary numbers to decimal (supports negative numbers)
 - **Case Transformations**: Change text to uppercase, lowercase, or capitalize
 - **Article Correction**: Automatically fix "a/an" usage based on vowel sounds  
 - **Punctuation Spacing**: Fix spacing around punctuation marks
+- **Quote Repositioning**: Properly position single quotes around words
 - **Command Chaining**: Apply multiple transformations to the same word
+- **Error Resilience**: Invalid commands are gracefully ignored
 - **Memory Efficient**: Processes files of any size using only ~8KB of memory
 - **Zero Dependencies**: Uses only Go standard library, no external packages
 
 ## Installation
 
 ### Prerequisites
-- Go 1.19 or higher
+- Go 1.19 or higher (tested with Go 1.24.9)
 
 ### Build
 ```bash
@@ -89,6 +93,18 @@ Output: "It was an honor to meet a European"
 ```
 Input:  "Hello , world ! How are you ?"
 Output: "Hello, world! How are you?"
+```
+
+### Quote Repositioning
+```
+Input:  "He said ' hello world ' and then ' goodbye ' ."
+Output: "He said 'hello world' and then 'goodbye'."
+```
+
+### Error Handling
+```
+Input:  "This (invalid) and ( up, text) should remain unchanged ."
+Output: "This (invalid) and ( up, text) should remain unchanged."
 ```
 
 ### Command Chaining
@@ -195,7 +211,7 @@ go test ./internal/config/
 
 **Important:** Golden tests always run without cache (`-count=1` flag) to ensure accurate feedback. This is critical for program reliability.
 
-The project includes 27 comprehensive test cases covering all transformation scenarios.
+The project includes 29 comprehensive test cases covering all transformation scenarios.
 
 ## Project Structure
 
@@ -215,7 +231,14 @@ go-reloaded/
 
 ## Technical Details
 
-For detailed technical documentation including FSM architecture, algorithms, and implementation details, see [`docs/technical_architecture.md`](docs/technical_architecture.md).
+For detailed technical documentation including FSM architecture, algorithms, and implementation details, see:
+- [`docs/technical_architecture.md`](docs/technical_architecture.md) - Complete technical overview
+- [`docs/golden_tests.md`](docs/golden_tests.md) - All 29 test cases with examples
+- [`docs/transformer_explained.md`](docs/transformer_explained.md) - FSM implementation details
+- [`docs/controller_explained.md`](docs/controller_explained.md) - Workflow orchestration
+- [`docs/parser_explained.md`](docs/parser_explained.md) - File processing details
+- [`docs/exporter_explained.md`](docs/exporter_explained.md) - Output generation
+- [`docs/config_explained.md`](docs/config_explained.md) - Configuration management
 
 ## License
 
