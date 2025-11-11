@@ -6,6 +6,7 @@ import "fmt"
 const (
 	CHUNK_BYTES   = 4096 // 4KB chunks for memory efficiency - can go from 1kb to 8kb
 	OVERLAP_WORDS = 20   // Number of words to preserve between chunks - can go from 10 to 20
+	// Also determines token buffer size (4x OVERLAP_WORDS = 80 tokens)
 )
 
 // ValidateConstants checks if all constants are within valid ranges

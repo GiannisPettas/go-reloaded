@@ -338,3 +338,14 @@ it is a eagle (cap, 2) was the best of times, it was the worst of times (up) .
 
 **Expected Output:**  
 it is An Eagle was the best of times, it was the worst of TIMES.
+
+## T30 — Article Correction with Case Commands
+
+**Description:**  
+Tests article correction (a → an) combined with case transformation commands to ensure proper interaction.
+
+**Input:**  
+it is a eagle (cap, 2) was the best of times, it was the worst of times (up) .
+
+**Expected Output:**  
+it is An Eagle was the best of times, it was the worst of TIMES.

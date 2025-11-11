@@ -3,6 +3,7 @@ package transformer
 import (
 	"strconv"
 	"strings"
+	"go-reloaded/internal/config"
 )
 
 // Token types
@@ -27,11 +28,21 @@ const (
 
 // High-level FSM for token processing
 type TokenProcessor struct {
-	tokens        [80]Token
+	tokens        []Token
 	tokenIdx      int
 	output        strings.Builder
 	upperArticles map[int]bool // Track positions of articles uppercased by (up) commands
 }
+
+func NewTokenProcessor() *TokenProcessor {
+	tokenBufferSize := config.OVERLAP_WORDS * 4 // 4x OVERLAP_WORDS for consistency
+	return &TokenProcessor{
+		tokens:        make([]Token, tokenBufferSize),
+		upperArticles: make(map[int]bool),
+	}
+}
+
+
 
 func (tp *TokenProcessor) addToken(token Token) {
 	if tp.tokenIdx < len(tp.tokens) {
@@ -236,9 +247,7 @@ func ProcessText(text string) string {
 	}
 
 	runes := []rune(text)
-	processor := &TokenProcessor{
-		upperArticles: make(map[int]bool),
-	}
+	processor := NewTokenProcessor()
 
 	state := STATE_TEXT
 	var wordBuilder strings.Builder
