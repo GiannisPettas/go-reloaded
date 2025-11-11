@@ -83,7 +83,7 @@ func processChunkedFile(inputPath, outputPath string) error {
 		// Merge with overlap context
 		var textToProcess string
 		if overlapContext != "" {
-			textToProcess = overlapContext + " " + chunkText
+			textToProcess = overlapContext + chunkText
 		} else {
 			textToProcess = chunkText
 		}

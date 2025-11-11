@@ -72,12 +72,27 @@ func ExtractOverlapWords(text string) (overlap, remaining string) {
 		return text, ""
 	}
 	
-	// Split into remaining and overlap
-	remainingWords := words[:len(words)-config.OVERLAP_WORDS]
-	overlapWords := words[len(words)-config.OVERLAP_WORDS:]
+	// Find the position where the overlap starts in the original text
+	// Count words from the end to preserve original formatting
+	wordCount := 0
+	overlapStart := len(text)
 	
-	remaining = strings.Join(remainingWords, " ")
-	overlap = strings.Join(overlapWords, " ")
+	// Scan backwards through the text to find where overlap words begin
+	for i := len(text) - 1; i >= 0 && wordCount < config.OVERLAP_WORDS; i-- {
+		if i == 0 || (text[i] != ' ' && text[i] != '\t' && text[i] != '\n' && 
+			(text[i-1] == ' ' || text[i-1] == '\t' || text[i-1] == '\n')) {
+			// Found start of a word
+			wordCount++
+			if wordCount == config.OVERLAP_WORDS {
+				overlapStart = i
+				break
+			}
+		}
+	}
+	
+	// Split preserving original formatting
+	remaining = text[:overlapStart]
+	overlap = text[overlapStart:]
 	
 	return overlap, remaining
 }

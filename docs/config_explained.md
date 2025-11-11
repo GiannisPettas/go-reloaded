@@ -89,7 +89,6 @@ Use case: Performance-critical applications
 
 **Choose 1KB when:**
 - Running on memory-constrained systems
-- Processing many files simultaneously
 - Memory usage is more important than speed
 
 **Choose 4KB when:**
