@@ -280,7 +280,7 @@ result := transformer.ProcessText(text)
 ```go
 // Parser respects user-configurable settings
 buffer := make([]byte, config.CHUNK_BYTES)    // 1KB-8KB configurable
-overlapWords := config.OVERLAP_WORDS          // 1-50 words configurable
+overlapWords := config.OVERLAP_WORDS          // 1-20 words configurable
 ```
 
 ## Error Handling Strategy

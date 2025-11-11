@@ -27,9 +27,9 @@ const (
 
 // High-level FSM for token processing
 type TokenProcessor struct {
-	tokens   [50]Token
-	tokenIdx int
-	output   strings.Builder
+	tokens        [80]Token
+	tokenIdx      int
+	output        strings.Builder
 	upperArticles map[int]bool // Track positions of articles uppercased by (up) commands
 }
 
@@ -161,7 +161,7 @@ func (tp *TokenProcessor) isValidCommand(cmdValue string) bool {
 	case "hex", "bin", "up", "low", "cap":
 		return true
 	}
-	
+
 	// Check for valid multi-word commands
 	if strings.Contains(cmdValue, ",") {
 		parts := strings.Split(cmdValue, ",")
@@ -175,7 +175,7 @@ func (tp *TokenProcessor) isValidCommand(cmdValue string) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -261,10 +261,10 @@ func ProcessText(text string) string {
 							break
 						}
 					}
-					
+
 					if closeParen != -1 {
 						// Extract potential command
-						potentialCmd := string(runes[i+1:closeParen])
+						potentialCmd := string(runes[i+1 : closeParen])
 						if processor.isValidCommand(potentialCmd) {
 							// Valid command - flush current word and switch to command state
 							if wordBuilder.Len() > 0 {
@@ -275,13 +275,13 @@ func ProcessText(text string) string {
 							break
 						} else {
 							// Invalid command - treat entire thing as word
-							wordBuilder.WriteString(string(runes[i:closeParen+1]))
+							wordBuilder.WriteString(string(runes[i : closeParen+1]))
 							i = closeParen // Skip to after closing paren
 							break
 						}
 					}
 				}
-				
+
 				// No closing paren found - treat as regular character
 				wordBuilder.WriteRune(r)
 			case ' ', '\t':
@@ -364,10 +364,15 @@ func fixArticles(text string) string {
 								words[i] = "an"
 							case "A":
 								words[i] = "An" // From (cap) command
+
 							case "UP_A":
 								words[i] = "AN" // From (up) command
 							case "AN":
 								words[i] = "AN" // Already fully uppercase
+							case "UP_AN":
+								words[i] = "AN"
+							case "UP_An":
+								words[i] = "An"
 							}
 						} else {
 							// Should be "a"
@@ -376,10 +381,15 @@ func fixArticles(text string) string {
 								words[i] = "a"
 							case "An":
 								words[i] = "A"
+
 							case "UP_A":
 								words[i] = "A" // From (up) command
 							case "AN":
 								words[i] = "A" // Preserve uppercase from (up) command
+							case "UP_AN":
+								words[i] = "AN"
+							case "UP_An":
+								words[i] = "An"
 							}
 						}
 					}
@@ -394,13 +404,13 @@ func fixArticles(text string) string {
 func fixQuotes(text string) string {
 	runes := []rune(text)
 	var result strings.Builder
-	
+
 	singleQuoteCount := 0
 	doubleQuoteCount := 0
-	
+
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
-		
+
 		if r == '\'' {
 			singleQuoteCount++
 			if singleQuoteCount%2 == 1 {
@@ -443,6 +453,6 @@ func fixQuotes(text string) string {
 			result.WriteRune(r)
 		}
 	}
-	
+
 	return result.String()
 }

@@ -1,40 +1,46 @@
 # Go-Reloaded Product Overview
 
-## Purpose
-Go-Reloaded is a high-performance text processing tool that transforms text files using various commands. It's designed for efficient text manipulation with minimal memory usage, capable of processing files of any size using only ~8KB of memory.
+## Project Purpose
+Go-Reloaded is a high-performance text processing tool that transforms text files using various commands. It's designed to handle files of any size with minimal memory usage through a dual finite state machine architecture.
 
 ## Key Features
 
-### Core Transformations
-- **Numeric Base Conversion**: Convert hexadecimal and binary numbers to decimal format
+### Text Transformations
+- **Numeric Base Conversion**: Convert hexadecimal and binary numbers to decimal (supports negative numbers)
 - **Case Transformations**: Change text to uppercase, lowercase, or capitalize words
 - **Article Correction**: Automatically fix "a/an" usage based on vowel sounds
 - **Punctuation Spacing**: Fix spacing around punctuation marks
-- **Command Chaining**: Apply multiple transformations to the same word sequentially
+- **Quote Repositioning**: Properly position single quotes around words
+- **Command Chaining**: Apply multiple transformations to the same word
 
-### Performance Characteristics
+### Performance & Reliability
 - **Memory Efficient**: Processes files of any size using only ~8KB of memory
-- **Single-Pass Processing**: No multiple iterations over data
-- **Dual FSM Architecture**: Two finite state machines working in tandem for maximum efficiency
-- **UTF-8 Safe**: Handles international characters without corruption
+- **Error Resilience**: Invalid commands are gracefully ignored
 - **Zero Dependencies**: Uses only Go standard library, no external packages
+- **UTF-8 Safe**: Handles international characters without corruption
+
+### File Size Handling
+- Small files (< 4KB): Single-pass processing
+- Medium files (4KB - 100MB): Chunked processing with overlap
+- Large files (100MB+): Constant memory usage (~8KB)
+- Very large files (1GB+): No memory limitations
 
 ## Target Users
-- Developers needing text preprocessing for data pipelines
-- Content creators requiring bulk text transformations
-- System administrators processing log files or configuration files
-- Anyone needing efficient, memory-conscious text processing
+- Developers needing text preprocessing tools
+- Data processing professionals working with large text files
+- System administrators requiring memory-efficient text transformation
+- Anyone needing reliable, fast text processing with specific formatting rules
 
 ## Use Cases
-- Converting numeric formats in technical documentation
-- Standardizing text case in large datasets
-- Correcting grammar issues in bulk text processing
-- Formatting text files for consistent punctuation
-- Processing large files without memory constraints
+- Batch text formatting and normalization
+- Large file processing with memory constraints
+- Text preprocessing for data pipelines
+- Document formatting automation
+- Educational tool for text processing algorithms
 
 ## Value Proposition
-- **Efficiency**: Constant memory usage regardless of file size
-- **Reliability**: Comprehensive test suite with 27 golden test cases
-- **Simplicity**: Single binary with straightforward command-line interface
-- **Performance**: Optimized for speed with dual FSM architecture
-- **Portability**: Pure Go implementation with no external dependencies
+- **Performance**: Dual FSM architecture enables single-pass processing
+- **Scalability**: Handles files from KB to GB with constant memory usage
+- **Reliability**: Comprehensive test suite with 29 golden test cases
+- **Simplicity**: Zero dependencies, easy deployment and integration
+- **Flexibility**: Command chaining allows complex transformations

@@ -33,7 +33,7 @@
                 </h1>
                 <p class="hero-description">
                     Go-Reloaded transforms text files using a sophisticated dual finite state machine 
-                    that processes any file size with constant 8KB memory usage and zero dependencies.
+                    that processes any file size with constant 7-10KB memory usage and zero dependencies.
                 </p>
                 <div class="hero-stats">
                     <div class="stat">
@@ -176,7 +176,7 @@ Convert FF (hex) to decimal and make it (up) .</textarea>
                             <h4>High-Level FSM (Token Processor)</h4>
                             <ul>
                                 <li><strong>Purpose:</strong> Token processing and transformations</li>
-                                <li><strong>Buffer:</strong> Fixed-size [50]Token array with overflow handling</li>
+                                <li><strong>Buffer:</strong> Fixed-size [80]Token array with overflow handling</li>
                                 <li><strong>Features:</strong> Pending command state for forward-looking transformations</li>
                             </ul>
                         </div>
@@ -273,7 +273,7 @@ Convert FF (hex) to decimal and make it (up) .</textarea>
                             <div class="chart-point" style="left: 30%;">1MB</div>
                             <div class="chart-point" style="left: 60%;">100MB</div>
                             <div class="chart-point" style="left: 90%;">1GB</div>
-                            <div class="constant-line">8KB Memory (Constant)</div>
+                            <div class="constant-line">7-10KB Memory (Constant)</div>
                         </div>
                     </div>
                 </div>
@@ -282,19 +282,19 @@ Convert FF (hex) to decimal and make it (up) .</textarea>
                     <div class="benchmark-table">
                         <div class="benchmark-row">
                             <span class="benchmark-label">1KB File</span>
-                            <span class="benchmark-value">~8KB RAM, &lt;1ms</span>
+                            <span class="benchmark-value">~7KB RAM, &lt;1ms</span>
                         </div>
                         <div class="benchmark-row">
                             <span class="benchmark-label">1MB File</span>
-                            <span class="benchmark-value">~8KB RAM, ~10ms</span>
+                            <span class="benchmark-value">~7KB RAM, ~10ms</span>
                         </div>
                         <div class="benchmark-row">
                             <span class="benchmark-label">100MB File</span>
-                            <span class="benchmark-value">~8KB RAM, ~1s</span>
+                            <span class="benchmark-value">~7KB RAM, ~1s</span>
                         </div>
                         <div class="benchmark-row">
                             <span class="benchmark-label">1GB File</span>
-                            <span class="benchmark-value">~8KB RAM, ~10s</span>
+                            <span class="benchmark-value">~7KB RAM, ~10s</span>
                         </div>
                     </div>
                 </div>

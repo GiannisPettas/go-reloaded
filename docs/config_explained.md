@@ -110,7 +110,7 @@ Use case: Performance-critical applications
 overlapWords := words[len(words)-config.OVERLAP_WORDS:]
 ```
 
-### Valid Range: 1 - 50 words
+### Valid Range: 10 - 20 words
 
 ### Context Preservation Examples
 
@@ -132,7 +132,7 @@ Chunk 2: "sixteen...twenty twenty-one twenty-two..."
 **Good for**: Most use cases, handles complex commands
 **Balance**: Good context preservation without excessive memory
 
-**50 words overlap:**
+**20 words overlap:**
 ```
 Chunk 1: "...forty-six forty-seven forty-eight forty-nine fifty"  
 Overlap: Very large context preserved
@@ -165,20 +165,20 @@ Result: Only "WORDS" gets transformed (incomplete)
 
 ### How to Choose OVERLAP_WORDS
 
-**Choose 5-10 words when:**
+**Choose 10 words when:**
 - Memory is extremely limited
 - Only using simple single-word commands
 - Processing simple text without complex transformations
 
+**Choose 15 words when:**
+- Moderate memory constraints
+- Using occasional multi-word commands
+- Balanced approach
+
 **Choose 20 words when:**
 - General purpose usage (recommended default)
-- Using multi-word commands occasionally
-- Balanced memory and functionality
-
-**Choose 30-50 words when:**
-- Using complex multi-word commands frequently
-- Commands like `(up, 25)` or `(cap, 30)`
-- Maximum compatibility is required
+- Using multi-word commands regularly
+- Maximum supported overlap for realistic commands
 
 ## Configuration Validation
 
@@ -206,9 +206,14 @@ func ValidateConstants() error {
         return fmt.Errorf("OVERLAP_WORDS must be positive, got %d", OVERLAP_WORDS)
     }
     
-    // Check OVERLAP_WORDS maximum (50)
-    if OVERLAP_WORDS > 50 {
-        return fmt.Errorf("OVERLAP_WORDS too large (max 50), got %d", OVERLAP_WORDS)
+    // Check OVERLAP_WORDS minimum (10)
+    if OVERLAP_WORDS < 10 {
+        return fmt.Errorf("OVERLAP_WORDS too small (min 10), got %d", OVERLAP_WORDS)
+    }
+    
+    // Check OVERLAP_WORDS maximum (20)
+    if OVERLAP_WORDS > 20 {
+        return fmt.Errorf("OVERLAP_WORDS too large (max 20), got %d", OVERLAP_WORDS)
     }
     
     return nil
@@ -222,10 +227,10 @@ func ValidateConstants() error {
 - **Maximum 8KB**: Prevents excessive memory usage
 - **Tested range**: All values in this range are thoroughly tested
 
-**OVERLAP_WORDS limits (1 - 50):**
-- **Minimum 1**: At least some context must be preserved
-- **Maximum 50**: Prevents excessive memory usage for overlap
-- **Practical limit**: 50 words covers even very complex commands
+**OVERLAP_WORDS limits (10 - 20):**
+- **Minimum 10**: Ensures sufficient context for most commands
+- **Maximum 20**: Prevents excessive memory usage while supporting realistic commands
+- **Practical limit**: 20 words covers most real-world command scenarios
 
 ## Integration with Other Components
 
@@ -261,9 +266,9 @@ totalMemory := config.CHUNK_BYTES + (config.OVERLAP_WORDS * averageWordLength)
 // Optimize for minimal memory usage
 const (
     CHUNK_BYTES   = 1024  // 1KB chunks
-    OVERLAP_WORDS = 5     // Minimal overlap
+    OVERLAP_WORDS = 10    // Minimal overlap
 )
-// Total memory: ~1.5KB
+// Total memory: ~1.7KB
 ```
 
 ### Balanced Configuration (Default)
@@ -281,9 +286,9 @@ const (
 // Optimize for maximum speed
 const (
     CHUNK_BYTES   = 8192  // 8KB chunks
-    OVERLAP_WORDS = 50    // Maximum overlap
+    OVERLAP_WORDS = 20    // Maximum overlap
 )
-// Total memory: ~10KB
+// Total memory: ~8.8KB
 ```
 
 ## Real-World Configuration Scenarios
@@ -311,7 +316,7 @@ const (
 // High-performance server (e.g., 64GB RAM)
 const (
     CHUNK_BYTES   = 8192  // Maximum throughput
-    OVERLAP_WORDS = 50    // Maximum compatibility
+    OVERLAP_WORDS = 20    // Maximum compatibility
 )
 ```
 
@@ -346,9 +351,9 @@ configurations := []struct{
     overlapWords int
     expectedMemory int
 }{
-    {1024, 5, 1500},   // Minimal
+    {1024, 10, 1700},  // Minimal
     {4096, 20, 6000},  // Default  
-    {8192, 50, 10000}, // Maximum
+    {8192, 20, 8800},  // Maximum
 }
 ```
 
@@ -376,9 +381,9 @@ func CalculateMemoryUsage(chunkBytes, overlapWords int) int {
 ### Usage Examples
 ```go
 // Calculate memory for different configurations
-fmt.Printf("1KB/5 words:  %d bytes\n", CalculateMemoryUsage(1024, 5))   // ~3.5KB
+fmt.Printf("1KB/10 words: %d bytes\n", CalculateMemoryUsage(1024, 10))  // ~3.7KB
 fmt.Printf("4KB/20 words: %d bytes\n", CalculateMemoryUsage(4096, 20))  // ~6.9KB  
-fmt.Printf("8KB/50 words: %d bytes\n", CalculateMemoryUsage(8192, 50))  // ~11.5KB
+fmt.Printf("8KB/20 words: %d bytes\n", CalculateMemoryUsage(8192, 20))  // ~10.9KB
 ```
 
 ## Design Principles

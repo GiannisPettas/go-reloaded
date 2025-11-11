@@ -11,7 +11,7 @@ Input File → Parser → Transformer → Exporter → Output File
 It handles:
 - **File size detection**: Single chunk vs. chunked processing
 - **Memory management**: Configurable constant memory usage (1KB-8KB) regardless of file size
-- **Overlap handling**: Maintains context between chunks for large files (1-50 words, configurable)
+- **Overlap handling**: Maintains context between chunks for large files (10-20 words, configurable)
 - **Error propagation**: Wraps errors with context throughout the pipeline
 - **Workflow coordination**: Ensures components work together seamlessly
 
@@ -223,9 +223,8 @@ if isFirstChunk {
 
 **Configurable Constant Memory Usage:**
 - **Chunk size**: `config.CHUNK_BYTES` (1KB-8KB, default 4KB)
-- **Overlap context**: `config.OVERLAP_WORDS` × ~20 chars (1-50 words, default 20 = ~400 bytes)
-- **Processing buffers**: Transformer uses ~2KB (50 tokens × ~40 bytes)
-- **Total**: ~1.5KB to ~10.5KB depending on configuration
+- **Overlap context**: `config.OVERLAP_WORDS` × ~20 chars (10-20 words, default 20 = ~400 bytes)
+- **Processing buffers**: Transformer uses ~2.5KB (80 tokens × ~32 bytes)
 
 **Memory is predictable and constant** regardless of file size.
 
@@ -308,11 +307,11 @@ Chunk 2: "word101 word102 ... these words (up, 2)"
 
 ### Memory Usage (Configurable)
 - **Small files**: ~2KB (transformer only)
-- **Large files**: ~1.5KB to ~10.5KB (depending on config settings)
-- **Default configuration**: ~6.5KB total
+- **Large files**: ~2KB to ~11KB (depending on config settings)
+- **Default configuration**: ~7KB total
 - **Scalability**: O(1) space complexity
 
-**User can adjust memory usage** by changing `config.CHUNK_BYTES` (1KB-8KB) and `config.OVERLAP_WORDS` (1-50).
+**User can adjust memory usage** by changing `config.CHUNK_BYTES` (1KB-8KB) and `config.OVERLAP_WORDS` (10-20).
 
 ### Time Complexity
 - **Processing**: O(n) where n = file size

@@ -140,9 +140,9 @@ Result: "MAKE THESE WORDS please"
 - **NEWLINE**: "\n" (line breaks)
 
 **Memory Efficiency:**
-The transformer uses a **fixed toolbox** (50 token slots) that never grows:
+The transformer uses a **fixed toolbox** (80 token slots) that never grows:
 ```go
-tokens [50]Token  // Fixed size, constant memory
+tokens [80]Token  // Fixed size, constant memory
 ```
 
 **Like a conveyor belt** - tokens come in, get processed, and move out. The belt size never changes!
@@ -354,11 +354,11 @@ Character 'w': STATE_TEXT, default -> add to wordBuilder: "w"
 
 ### Step 3: Token Management - `TokenProcessor`
 
-The TokenProcessor manages a buffer of 50 tokens:
+The TokenProcessor manages a buffer of 80 tokens:
 
 ```go
 type TokenProcessor struct {
-    tokens   [50]Token  // Fixed-size buffer
+    tokens   [80]Token  // Fixed-size buffer
     tokenIdx int        // Current position
     output   strings.Builder // Final output
     upperArticles map[int]bool // Track articles uppercased by (up) commands
@@ -848,7 +848,7 @@ for each quote pair {
 ### Memory Efficiency
 
 **Constant Memory Usage**: ~8KB regardless of file size
-- Fixed token buffer: `[50]Token`
+- Fixed token buffer: `[80]Token`
 - String builders reused, not recreated
 - Chunked processing for large files
 - No growing slices or maps
@@ -962,7 +962,7 @@ Final result: "The value 255 should BE"
 **Key insight:** The transformer uses constant memory (~8KB) regardless of file size!
 
 **How?**
-1. **Fixed token buffer:** Only 50 tokens max
+1. **Fixed token buffer:** Only 80 tokens max
 2. **Streaming:** Process and flush tokens continuously
 3. **No storing entire file:** Read, process, output, repeat
 

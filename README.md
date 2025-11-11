@@ -13,7 +13,7 @@ A high-performance text processing tool that transforms text files using various
 - **Quote Repositioning**: Properly position single quotes around words
 - **Command Chaining**: Apply multiple transformations to the same word
 - **Error Resilience**: Invalid commands are gracefully ignored
-- **Memory Efficient**: Processes files of any size using only ~8KB of memory
+- **Memory Efficient**: Processes files of any size using only ~7-10KB of memory
 - **Zero Dependencies**: Uses only Go standard library, no external packages
 
 ## Installation
@@ -147,7 +147,7 @@ Convert 255 to decimal and make it UP.
 ### File Size Handling
 - ✅ Small files (< 4KB): Single-pass processing
 - ✅ Medium files (4KB - 100MB): Chunked processing with overlap
-- ✅ Large files (100MB+): Constant memory usage (~8KB)
+- ✅ Large files (100MB+): Constant memory usage (~7-10KB)
 - ✅ Very large files (1GB+): No memory limitations
 
 ### System Requirements
@@ -159,7 +159,7 @@ Convert 255 to decimal and make it UP.
 
 - **Dual FSM Design**: Two finite state machines working in tandem
 - **Single-Pass Processing**: No multiple iterations over data
-- **Memory Efficient**: Fixed-size buffers, constant memory usage
+- **Memory Efficient**: Fixed-size buffers (80-token belt), constant memory usage
 - **UTF-8 Safe**: Handles international characters without corruption
 - **Chunked Processing**: Smart overlap handling for large files
 - **Zero Dependencies**: Pure Go standard library implementation

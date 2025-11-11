@@ -5,7 +5,7 @@ import "fmt"
 // System constants for chunk processing
 const (
 	CHUNK_BYTES   = 4096 // 4KB chunks for memory efficiency - can go from 1kb to 8kb
-	OVERLAP_WORDS = 20   // Number of words to preserve between chunks - can go from 1 to 50
+	OVERLAP_WORDS = 20   // Number of words to preserve between chunks - can go from 10 to 20
 )
 
 // ValidateConstants checks if all constants are within valid ranges
@@ -22,9 +22,11 @@ func ValidateConstants() error {
 	if OVERLAP_WORDS <= 0 {
 		return fmt.Errorf("OVERLAP_WORDS must be positive, got %d", OVERLAP_WORDS)
 	}
-	if OVERLAP_WORDS > 50 {
-		return fmt.Errorf("OVERLAP_WORDS too large (max 50), got %d", OVERLAP_WORDS)
+	if OVERLAP_WORDS < 10 {
+		return fmt.Errorf("OVERLAP_WORDS too small (min 10), got %d", OVERLAP_WORDS)
+	}
+	if OVERLAP_WORDS > 20 {
+		return fmt.Errorf("OVERLAP_WORDS too large (max 20), got %d", OVERLAP_WORDS)
 	}
 	return nil
 }
-

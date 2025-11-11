@@ -17,8 +17,8 @@ func TestOverlapWordsConstant(t *testing.T) {
 	if OVERLAP_WORDS <= 0 {
 		t.Errorf("OVERLAP_WORDS must be positive, got %d", OVERLAP_WORDS)
 	}
-	if OVERLAP_WORDS > 50 {
-		t.Errorf("OVERLAP_WORDS should be reasonable (<=50), got %d", OVERLAP_WORDS)
+	if OVERLAP_WORDS > 20 {
+		t.Errorf("OVERLAP_WORDS should be reasonable (<=20), got %d", OVERLAP_WORDS)
 	}
 }
 
