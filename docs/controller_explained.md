@@ -298,12 +298,12 @@ Chunk 2: "word101 word102 ... these words (up, 2)"
 ## Performance Characteristics
 
 ### File Size Handling (Configurable Thresholds)
-- **Small files (< CHUNK_BYTES)**: Single-pass, maximum speed
-- **Medium files (CHUNK_BYTES - 100MB)**: Chunked with overlap, constant memory
-- **Large files (100MB+)**: Same constant memory, no performance degradation
-- **Very large files (1GB+)**: Linear time complexity, constant space complexity
+- **Small files (≤ CHUNK_BYTES)**: Single-pass, maximum speed
+- **Large files (> CHUNK_BYTES)**: Chunked with overlap, constant memory
+- **Any file size**: Processing time grows with file size, memory usage stays fixed
+- **No upper limit**: Handles GB+ files with same memory footprint
 
-**Default threshold**: 4KB, **configurable**: 1KB-8KB
+**Threshold**: `config.CHUNK_BYTES` (default 4KB, configurable 1KB-8KB)
 
 ### Memory Usage (Configurable)
 - **Small files**: ~2KB (transformer only)
@@ -313,10 +313,10 @@ Chunk 2: "word101 word102 ... these words (up, 2)"
 
 **User can adjust memory usage** by changing `config.CHUNK_BYTES` (1KB-8KB) and `config.OVERLAP_WORDS` (10-20).
 
-### Time Complexity
-- **Processing**: O(n) where n = file size
-- **Memory access**: O(1) - no growing data structures
-- **I/O operations**: Minimized through efficient chunking
+### Performance Scaling
+- **Processing time**: Doubles when file size doubles (linear scaling)
+- **Memory usage**: Same 6-8KB whether file is 1KB or 1GB (constant)
+- **I/O efficiency**: Reads file in optimal chunks, writes incrementally
 
 ## Integration with Other Components
 
@@ -370,19 +370,21 @@ if fileInfo.Size() <= int64(config.CHUNK_BYTES) {
 **Controller only orchestrates** - it doesn't:
 - Parse file content (parser's job)
 - Transform text (transformer's job)  
-- Handle file I/O details (exporter's job)rter's job)
+- Handle file I/O details (exporter's job)
 
-### Dependency Injection
-**Controller receives all dependencies explicitly:**
-- No global state
-- Easy to test with mocks
-- Clear component boundaries
+### Clean Component Design
+**Controller uses other components through function calls:**
+- Calls `parser.ReadChunk()` instead of accessing files directly
+- Calls `transformer.ProcessText()` instead of doing transformations itself
+- Calls `exporter.WriteChunk()` instead of writing files directly
+- Each component has a clear, separate job
 
 ### Error Transparency
 **All errors bubble up with context:**
 - Caller knows exactly what failed
-- Original error preserved with `%w`
+- Original error details preserved (using `%w` wrapping)
 - Operation context added at each level
+- Full error chain available for debugging
 
 ### Memory Efficiency
 **Constant memory usage regardless of file size:**

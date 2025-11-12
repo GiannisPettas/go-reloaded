@@ -25,6 +25,7 @@ const OVERLAP_WORDS = 20 // Number of words to preserve between chunks
 ```
 
 **Controls how many words are remembered between chunks for command context.**
+**Also determines token buffer size: `tokenBufferSize = OVERLAP_WORDS * 4` (80 tokens for default)**
 
 ### 3. Validation Function
 ```go
@@ -103,42 +104,36 @@ Use case: Performance-critical applications
 
 ## OVERLAP_WORDS Deep Dive
 
-### What It Controls
-```go
-// Parser extracts overlap words for context
-overlapWords := words[len(words)-config.OVERLAP_WORDS:]
-```
-
 ### Valid Range: 10 - 20 words
 
 ### Context Preservation Examples
 
-**5 words overlap:**
+**10 words overlap (minimum):**
 ```
-Chunk 1: "The quick brown fox jumps"
-Overlap: "brown fox jumps" (last 3 words)
-Chunk 2: "brown fox jumps over the lazy dog"
+Chunk 1: "...word6 word7 word8 word9 word10 word11 word12 word13 word14 word15"
+Overlap: "word6 word7 word8 word9 word10 word11 word12 word13 word14 word15" (last 10 words)
+Chunk 2: "word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16..."
 ```
-**Good for**: Simple commands, memory efficiency
-**Risk**: Complex multi-word commands might fail
+**Good for**: Memory-constrained environments, simple commands
+**Risk**: Complex multi-word commands (>10 words) might fail
 
-**20 words overlap (default):**
+**15 words overlap (balanced):**
 ```
-Chunk 1: "...fifteen sixteen seventeen eighteen nineteen twenty"
-Overlap: "sixteen seventeen eighteen nineteen twenty" (last 5 shown)
-Chunk 2: "sixteen...twenty twenty-one twenty-two..."
+Chunk 1: "...word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15"
+Overlap: "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15" (last 15 words)
+Chunk 2: "word1...word15 word16 word17..."
 ```
-**Good for**: Most use cases, handles complex commands
-**Balance**: Good context preservation without excessive memory
+**Good for**: Moderate memory usage, handles most commands
+**Balance**: Good context preservation with reasonable memory cost
 
-**20 words overlap:**
+**20 words overlap (default/maximum):**
 ```
-Chunk 1: "...forty-six forty-seven forty-eight forty-nine fifty"  
-Overlap: Very large context preserved
-Chunk 2: "forty-six...fifty fifty-one fifty-two..."
+Chunk 1: "...w1 w2 w3 w4 w5 w6 w7 w8 w9 w10 w11 w12 w13 w14 w15 w16 w17 w18 w19 w20"
+Overlap: "w1 w2 w3 w4 w5 w6 w7 w8 w9 w10 w11 w12 w13 w14 w15 w16 w17 w18 w19 w20" (all 20 words)
+Chunk 2: "w1...w20 w21 w22..."
 ```
-**Good for**: Very complex commands, maximum compatibility
-**Cost**: Higher memory usage
+**Good for**: Maximum command compatibility, handles any realistic command
+**Cost**: Highest memory usage within valid range
 
 ### How Commands Use Overlap
 
@@ -227,9 +222,10 @@ func ValidateConstants() error {
 - **Tested range**: All values in this range are thoroughly tested
 
 **OVERLAP_WORDS limits (10 - 20):**
-- **Minimum 10**: Ensures sufficient context for most commands
-- **Maximum 20**: Prevents excessive memory usage while supporting realistic commands
+- **Minimum 10**: Ensures sufficient context for most commands (40-token buffer)
+- **Maximum 20**: Prevents excessive memory usage while supporting realistic commands (80-token buffer)
 - **Practical limit**: 20 words covers most real-world command scenarios
+- **Token Buffer Impact**: Each word creates ~4 tokens (word + spaces/punctuation), so buffer size = OVERLAP_WORDS × 4
 
 ## Integration with Other Components
 
@@ -256,6 +252,10 @@ if fileInfo.Size() <= int64(config.CHUNK_BYTES) {
 ```go
 // Total memory usage calculation
 totalMemory := config.CHUNK_BYTES + (config.OVERLAP_WORDS * averageWordLength)
+
+// Token buffer memory in transformer
+tokenBufferSize := config.OVERLAP_WORDS * 4  // 4x multiplier for token buffer
+tokenMemory := tokenBufferSize * (tokenStructSize + averageTokenValueLength)
 ```
 
 ## Performance Tuning Examples
