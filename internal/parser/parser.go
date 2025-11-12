@@ -16,7 +16,7 @@ func ReadChunk(filepath string, offset int64) ([]byte, error) {
 		return nil, fmt.Errorf("failed to open file %s: %w", filepath, err)
 	}
 	defer file.Close()
-	
+
 	// Seek to offset
 	if offset > 0 {
 		_, err = file.Seek(offset, io.SeekStart)
@@ -24,17 +24,17 @@ func ReadChunk(filepath string, offset int64) ([]byte, error) {
 			return nil, fmt.Errorf("failed to seek to offset %d: %w", offset, err)
 		}
 	}
-	
+
 	// Read up to CHUNK_BYTES
 	buffer := make([]byte, config.CHUNK_BYTES)
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
 		return nil, fmt.Errorf("failed to read from file: %w", err)
 	}
-	
+
 	// Return only the bytes that were actually read
 	chunk := buffer[:n]
-	
+
 	// Adjust to rune boundary to avoid UTF-8 corruption
 	adjusted := AdjustToRuneBoundary(chunk)
 	return adjusted, nil
@@ -45,19 +45,19 @@ func AdjustToRuneBoundary(data []byte) []byte {
 	if len(data) == 0 {
 		return data
 	}
-	
+
 	// Check if data is already valid UTF-8
 	if utf8.Valid(data) {
 		return data
 	}
-	
+
 	// Find the last valid rune boundary by working backwards
 	for i := len(data) - 1; i >= 0; i-- {
 		if utf8.Valid(data[:i+1]) {
 			return data[:i+1]
 		}
 	}
-	
+
 	// If no valid UTF-8 found, return empty
 	return []byte{}
 }
@@ -66,20 +66,20 @@ func AdjustToRuneBoundary(data []byte) []byte {
 // Returns (overlap, remaining) where overlap contains the last words
 func ExtractOverlapWords(text string) (overlap, remaining string) {
 	words := strings.Fields(text)
-	
+
 	if len(words) <= config.OVERLAP_WORDS {
 		// If we have fewer words than overlap size, return all as overlap
 		return text, ""
 	}
-	
+
 	// Find the position where the overlap starts in the original text
 	// Count words from the end to preserve original formatting
 	wordCount := 0
 	overlapStart := len(text)
-	
-	// Scan backwards through the text to find where overlap words begin
+
+	// Scan backwards through the text to find where overlap words begin (to preserve new lines.)
 	for i := len(text) - 1; i >= 0 && wordCount < config.OVERLAP_WORDS; i-- {
-		if i == 0 || (text[i] != ' ' && text[i] != '\t' && text[i] != '\n' && 
+		if i == 0 || (text[i] != ' ' && text[i] != '\t' && text[i] != '\n' &&
 			(text[i-1] == ' ' || text[i-1] == '\t' || text[i-1] == '\n')) {
 			// Found start of a word
 			wordCount++
@@ -89,11 +89,11 @@ func ExtractOverlapWords(text string) (overlap, remaining string) {
 			}
 		}
 	}
-	
+
 	// Split preserving original formatting
 	remaining = text[:overlapStart]
 	overlap = text[overlapStart:]
-	
+
 	return overlap, remaining
 }
 
